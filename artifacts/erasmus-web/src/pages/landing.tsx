@@ -492,16 +492,16 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-sm shadow-sm border-b border-slate-100" : "bg-transparent"}`}>
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[#003399] shadow-md" : "bg-transparent"}`}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
-            src={scrolled ? "/logo-ies.png" : "/logo-ies-nobg.png"}
+            src="/logo-ies-nobg.png"
             alt="IES Manuel Martín González"
             className="h-9 w-auto object-contain"
-            style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
+            style={{ filter: "brightness(0) invert(1)" }}
           />
-          <div className={`font-bold text-sm leading-tight hidden sm:block ${scrolled ? "text-[#003399]" : "text-white"}`}>
+          <div className="font-bold text-sm leading-tight hidden sm:block text-white">
             {settings?.siteTitle || "IES Manuel Martín González"}
           </div>
         </div>
@@ -515,7 +515,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
             <a
               key={item.href}
               href={item.href}
-              className={`text-sm font-medium transition-colors hidden md:block ${scrolled ? "text-slate-600 hover:text-[#003399]" : "text-white/80 hover:text-white"}`}
+              className="text-sm font-medium transition-colors hidden md:block text-white/85 hover:text-white"
             >
               {item.label}
             </a>
@@ -524,7 +524,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
             src="/logo-erasmus.png"
             alt="Erasmus+"
             className="h-16 w-auto object-contain hidden md:block"
-            style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
+            style={{ filter: "brightness(0) invert(1)" }}
           />
         </div>
       </div>
