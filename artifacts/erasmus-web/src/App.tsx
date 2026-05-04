@@ -14,6 +14,7 @@ import AdminSettings from "@/pages/admin-settings";
 import ActivityDetail from "@/pages/activity-detail";
 import MobilityDetail from "@/pages/mobility-detail";
 import Gallery from "@/pages/gallery";
+import Partners from "@/pages/partners";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/" component={LandingPage} />
       <Route path="/actividades/:id" component={ActivityDetail} />
       <Route path="/movilidades/:id" component={MobilityDetail} />
+      <Route path="/socios" component={Partners} />
       <Route path="/galeria" component={Gallery} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />

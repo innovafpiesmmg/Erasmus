@@ -1,7 +1,7 @@
 import { useGetPartners, useGetMobilities, useGetSettings, useGetActivities, useGetMedia } from "@workspace/api-client-react";
 import type { Partner, MobilityWithPartner, Settings, Activity, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera } from "lucide-react";
+import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
@@ -231,28 +231,48 @@ function PartnersMap({ partners, mobilities }: { partners: Partner[]; mobilities
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {partners.map((p, i) => (
-            <motion.div
-              key={p.id}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.07 }}
-              className="bg-white rounded-xl border border-slate-100 p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow"
-              data-testid={`partner-card-${p.id}`}
-            >
-              <div className="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ background: p.isCoordinator ? "#003399" : "#f1f5f9" }}>
-                {p.isCoordinator ? <span className="text-white text-xs font-bold">CO</span> : <span>{COUNTRY_FLAGS[p.country] || "🌍"}</span>}
-              </div>
-              <div className="min-w-0">
-                <div className="font-semibold text-slate-900 text-sm leading-tight">{p.name}</div>
-                <div className="text-xs text-slate-500 mt-0.5">{p.city}, {p.country}</div>
-                {p.isCoordinator && (
-                  <span className="mt-1.5 inline-block text-xs bg-[#003399]/10 text-[#003399] px-2 py-0.5 rounded-full">Coordinador</span>
-                )}
-              </div>
-            </motion.div>
+            <Link key={p.id} href={`/socios?partner=${p.id}`}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.07 }}
+                className="bg-white rounded-xl border border-slate-100 p-5 flex items-start gap-4 shadow-sm hover:shadow-md hover:border-[#003399]/20 transition-all cursor-pointer group"
+                data-testid={`partner-card-${p.id}`}
+              >
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center" style={{ background: p.isCoordinator ? "#003399" : "#f1f5f9" }}>
+                  {p.logoUrl ? (
+                    <img src={p.logoUrl} alt={p.name} className="w-full h-full object-contain p-0.5" />
+                  ) : p.isCoordinator ? (
+                    <span className="text-white text-xs font-bold">CO</span>
+                  ) : (
+                    <span className="text-xl">{COUNTRY_FLAGS[p.country] || "🌍"}</span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-semibold text-slate-900 text-sm leading-tight">{p.name}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{p.city}, {p.country}</div>
+                  {p.isCoordinator && (
+                    <span className="mt-1.5 inline-block text-xs bg-[#003399]/10 text-[#003399] px-2 py-0.5 rounded-full">Coordinador</span>
+                  )}
+                </div>
+                <ExternalLink size={13} className="flex-shrink-0 text-slate-300 group-hover:text-[#003399] transition-colors mt-0.5" />
+              </motion.div>
+            </Link>
           ))}
         </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-8"
+        >
+          <Link href="/socios">
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg" style={{ background: "#003399" }}>
+              Ver todos los socios <ChevronRight size={15} />
+            </button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

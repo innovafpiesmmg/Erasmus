@@ -2,10 +2,10 @@ import { useGetPartners, useCreatePartner, useUpdatePartner, useDeletePartner, g
 import type { Partner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, MapPin, Globe, X } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Globe, X, ImageOff, Instagram, Twitter } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -28,6 +28,26 @@ const partnerSchema = z.object({
 });
 type PartnerForm = z.infer<typeof partnerSchema>;
 
+function LogoPreview({ control }: { control: import("react-hook-form").Control<PartnerForm> }) {
+  const logoUrl = useWatch({ control, name: "logoUrl" });
+  if (!logoUrl) return null;
+  return (
+    <div className="mt-2 flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+      <img
+        src={logoUrl}
+        alt="Logo preview"
+        className="w-14 h-14 object-contain rounded border border-slate-200 bg-white p-1"
+        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+        data-testid="logo-preview"
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-slate-500 truncate">{logoUrl}</p>
+        <p className="text-xs text-[#003399] mt-0.5 flex items-center gap-1"><ImageOff size={10} /> Vista previa del logo</p>
+      </div>
+    </div>
+  );
+}
+
 function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => void }) {
   const qc = useQueryClient();
   const create = useCreatePartner({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }); onClose(); } } });
@@ -39,7 +59,14 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
   });
 
   const onSubmit = (data: PartnerForm) => {
-    const payload = { ...data, webUrl: data.webUrl || null, logoUrl: data.logoUrl || null, oid: data.oid || null };
+    const payload = {
+      ...data,
+      webUrl: data.webUrl || null,
+      logoUrl: data.logoUrl || null,
+      oid: data.oid || null,
+      socialInstagram: data.socialInstagram || null,
+      socialTwitter: data.socialTwitter || null,
+    };
     if (partner) {
       update.mutate({ id: partner.id, data: payload });
     } else {
@@ -100,7 +127,19 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
 
             <div className="col-span-2">
               <label className="block text-xs font-medium text-slate-700 mb-1">Logo URL</label>
-              <input {...form.register("logoUrl")} type="url" data-testid="input-partner-logo" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              <input {...form.register("logoUrl")} type="url" data-testid="input-partner-logo" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" placeholder="https://..." />
+              {form.formState.errors.logoUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.logoUrl.message}</p>}
+              <LogoPreview control={form.control} />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1"><Instagram size={12} /> Instagram</label>
+              <input {...form.register("socialInstagram")} data-testid="input-partner-instagram" placeholder="@cuenta" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1 flex items-center gap-1"><Twitter size={12} /> Twitter / X</label>
+              <input {...form.register("socialTwitter")} data-testid="input-partner-twitter" placeholder="@cuenta" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
             </div>
 
             <div className="col-span-2 flex items-center gap-2">
