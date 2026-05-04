@@ -31,10 +31,11 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
   return (
     <section
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
-      style={{ background: "linear-gradient(135deg, #003399 0%, #001a6e 60%, #2D5A27 100%)" }}
     >
-      <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "url('https://images.unsplash.com/photo-1543269865-cbf427effbad?w=1600&auto=format&fit=crop')", backgroundSize: "cover", backgroundPosition: "center" }} />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(0,51,153,0.92) 0%, rgba(0,26,110,0.85) 60%, rgba(45,90,39,0.88) 100%)" }} />
+      {/* Hero background photo */}
+      <div className="absolute inset-0" style={{ backgroundImage: "url('/hero-erasmus.png')", backgroundSize: "cover", backgroundPosition: "center top" }} />
+      {/* Dark overlay for text readability, with subtle brand colour tint */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(0,26,110,0.72) 0%, rgba(0,10,50,0.65) 50%, rgba(30,60,20,0.70) 100%)" }} />
 
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
         <motion.div

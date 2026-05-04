@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "o5k26QrqVCzF0pFleTrQp"
+uri = "file://artifacts/erasmus-web/public/hero-erasmus.png"
+type = "image"
+title = "generated_image"
