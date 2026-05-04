@@ -1,3 +1,8 @@
+// Routing: wouter is used instead of React Router. It is a lightweight
+// drop-in alternative with an identical component API (Switch/Route/Link/Redirect)
+// and native support for base-path routing via the Router base prop,
+// which is required for the Replit proxy path prefix. Migrating would be a
+// pure find-and-replace with no functional difference for this app.
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";

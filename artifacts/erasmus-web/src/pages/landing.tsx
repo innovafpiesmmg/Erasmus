@@ -1,4 +1,5 @@
 import { useGetPartners, useGetMobilities, useGetSettings, useGetActivities, useGetMedia } from "@workspace/api-client-react";
+import type { Partner, MobilityWithPartner, Settings, Activity, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, Users, Leaf, Camera } from "lucide-react";
 import { Link } from "wouter";
@@ -26,7 +27,7 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function HeroSection({ settings }: { settings: any }) {
+function HeroSection({ settings }: { settings: Settings | undefined }) {
   return (
     <section
       className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
@@ -112,7 +113,7 @@ function HeroSection({ settings }: { settings: any }) {
   );
 }
 
-function StatsBar({ partners, mobilities }: { partners: any[]; mobilities: any[] | undefined }) {
+function StatsBar({ partners, mobilities }: { partners: Partner[]; mobilities: MobilityWithPartner[] | undefined }) {
   const stats = [
     { label: "Países participantes", value: partners.length || 6, icon: Globe },
     { label: "Movilidades planificadas", value: mobilities?.length ?? 6, icon: Calendar },
@@ -143,9 +144,9 @@ function StatsBar({ partners, mobilities }: { partners: any[]; mobilities: any[]
   );
 }
 
-function PartnersMap({ partners, mobilities }: { partners: any[]; mobilities: any[] | undefined }) {
+function PartnersMap({ partners, mobilities }: { partners: Partner[]; mobilities: MobilityWithPartner[] | undefined }) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
+  const mapInstanceRef = useRef<{ remove: () => void } | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current || !partners.length || mobilities === undefined) return;
@@ -166,9 +167,9 @@ function PartnersMap({ partners, mobilities }: { partners: any[]; mobilities: an
       }).addTo(map);
 
       partners.forEach((p) => {
-        const partnerMobilities = mobilities.filter((m: any) => m.partnerId === p.id);
+        const partnerMobilities = (mobilities ?? []).filter((m) => m.partnerId === p.id);
         const mobilityRows = partnerMobilities.length
-          ? partnerMobilities.map((m: any) => {
+          ? partnerMobilities.map((m) => {
               const wpColor = WP_COLORS[m.workPackage] || "#003399";
               return `<div style="display:flex;align-items:center;gap:6px;margin-top:4px">
                 <span style="background:${wpColor};color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;white-space:nowrap">${m.workPackage}</span>
@@ -256,7 +257,7 @@ function PartnersMap({ partners, mobilities }: { partners: any[]; mobilities: an
   );
 }
 
-function MobilitiesTimeline({ mobilities }: { mobilities: any[] | undefined }) {
+function MobilitiesTimeline({ mobilities }: { mobilities: MobilityWithPartner[] | undefined }) {
   return (
     <section id="movilidades" className="py-20 bg-white">
       <div className="max-w-5xl mx-auto px-6">
@@ -322,7 +323,7 @@ function MobilitiesTimeline({ mobilities }: { mobilities: any[] | undefined }) {
   );
 }
 
-function GallerySection({ media }: { media: any[] }) {
+function GallerySection({ media }: { media: Media[] }) {
   const images = media.filter((m) => m.mediaType === "image").slice(0, 6);
   if (!images.length) return null;
 
@@ -367,7 +368,7 @@ function GallerySection({ media }: { media: any[] }) {
   );
 }
 
-function ActivitiesSection({ activities }: { activities: any[] }) {
+function ActivitiesSection({ activities }: { activities: Activity[] }) {
   if (!activities.length) return null;
 
   return (
@@ -408,7 +409,7 @@ function ActivitiesSection({ activities }: { activities: any[] }) {
   );
 }
 
-function Footer({ settings }: { settings: any }) {
+function Footer({ settings }: { settings: Settings | undefined }) {
   return (
     <footer style={{ background: "#001a6e" }} className="py-12 text-white/80">
       <div className="max-w-6xl mx-auto px-6">
@@ -432,7 +433,7 @@ function Footer({ settings }: { settings: any }) {
   );
 }
 
-function Navbar({ settings }: { settings: any }) {
+function Navbar({ settings }: { settings: Settings | undefined }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {

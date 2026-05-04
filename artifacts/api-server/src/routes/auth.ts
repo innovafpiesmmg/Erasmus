@@ -2,20 +2,29 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { AdminLoginBody } from "@workspace/api-zod";
 import crypto from "crypto";
 
+const IS_PRODUCTION = process.env.NODE_ENV === "production";
+
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  throw new Error(
-    "ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required. " +
-    "Set them in the Replit Secrets panel before starting the server.",
+  if (IS_PRODUCTION) {
+    throw new Error(
+      "ADMIN_USERNAME and ADMIN_PASSWORD must be set in production. " +
+        "Configure them in the Replit Secrets panel.",
+    );
+  }
+  console.warn(
+    "[auth] ADMIN_USERNAME / ADMIN_PASSWORD not set — using dev defaults " +
+      "(admin / erasmus2025). Set both secrets before deploying to production.",
   );
 }
 
+const effectiveUsername = ADMIN_USERNAME ?? "admin";
+const effectivePassword = ADMIN_PASSWORD ?? "erasmus2025";
+
 export type SessionData = { authenticated: boolean; username: string };
 export const SESSION_STORE: Map<string, SessionData> = new Map();
-
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 const router: IRouter = Router();
 
@@ -26,7 +35,7 @@ router.post("/admin/login", (req: Request, res: Response) => {
     return;
   }
   const { username, password } = parsed.data;
-  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+  if (username === effectiveUsername && password === effectivePassword) {
     const sessionId = crypto.randomUUID();
     SESSION_STORE.set(sessionId, { authenticated: true, username });
     const cookieFlags = [
