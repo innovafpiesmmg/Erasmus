@@ -224,7 +224,7 @@ function PartnersMap({ partners, mobilities }: { partners: Partner[]; mobilities
           <p className="text-slate-500 max-w-xl mx-auto">6 centros educativos de 6 países europeos unidos por un objetivo común: construir un futuro más sostenible.</p>
         </motion.div>
 
-        <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 mb-10" style={{ height: 420 }}>
+        <div className="rounded-2xl overflow-hidden shadow-lg border border-slate-200 mb-10 isolate" style={{ height: 420 }}>
           <div ref={mapRef} style={{ height: "100%", width: "100%" }} data-testid="partners-map" />
         </div>
 
