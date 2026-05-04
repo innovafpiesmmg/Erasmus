@@ -97,9 +97,20 @@ echo ""
 read -rp "  ¿Continuar? [s/N]: " CONFIRM
 [[ "${CONFIRM,,}" =~ ^(s|si|yes|y)$ ]] || die "Instalación cancelada."
 
+# ── Bootstrap: curl y git (necesarios antes de cualquier otra cosa) ──
+section "Verificando dependencias mínimas"
+export DEBIAN_FRONTEND=noninteractive
+if ! command -v curl &>/dev/null || ! command -v git &>/dev/null; then
+    info "curl o git no encontrados → instalando..."
+    apt-get update -qq
+    apt-get install -y -qq curl git
+    ok "curl y git instalados."
+else
+    ok "curl $(curl --version | head -1 | cut -d' ' -f2) y git $(git --version | cut -d' ' -f3) disponibles."
+fi
+
 # ── Instalar paquetes del sistema ─────────────────────────────
 section "Instalando paquetes del sistema"
-export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq \
     curl git nginx postgresql postgresql-contrib \

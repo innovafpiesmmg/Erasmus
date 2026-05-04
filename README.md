@@ -55,21 +55,33 @@ Duración: 01/09/2025 – 31/08/2027 · Acrónimo: **SEA**
 
 ### Requisitos
 - Ubuntu 22.04 o 24.04 LTS
-- Acceso root
+- Acceso root / sudo
 - Conexión a Internet
 
-### Instalación automática
+> El instalador se encarga de instalar **todo** lo necesario (Node.js, pnpm, PostgreSQL, Nginx, Git, curl…).
+> Sólo hace falta que el servidor pueda conectarse a Internet.
+
+### Servidor en blanco (sin curl ni git)
+
+En Ubuntu, `wget` suele estar preinstalado aunque no haya nada más. Úsalo para descargar el instalador:
+
+```bash
+wget -O install.sh https://raw.githubusercontent.com/innovafpiesmmg/Erasmus/main/install.sh
+sudo bash install.sh
+```
+
+Si tampoco hay `wget`, instálalo primero (sólo necesita `apt`, que siempre está):
+
+```bash
+apt update && apt install -y wget
+wget -O install.sh https://raw.githubusercontent.com/innovafpiesmmg/Erasmus/main/install.sh
+sudo bash install.sh
+```
+
+### Si ya tienes curl
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/innovafpiesmmg/Erasmus/main/install.sh | sudo bash
-```
-
-O clonando primero el repositorio:
-
-```bash
-git clone https://github.com/innovafpiesmmg/Erasmus
-cd Erasmus
-sudo bash install.sh
 ```
 
 El instalador realizará automáticamente:
