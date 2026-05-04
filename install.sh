@@ -27,6 +27,7 @@ API_PORT="8080"
 APP_USER="sea-erasmus"
 DB_NAME="sea_erasmus"
 DB_USER="sea_erasmus"
+GITHUB_REPO="https://github.com/innovafpiesmmg/Erasmus"
 
 # ── Verificar root ────────────────────────────────────────────
 [[ "$EUID" -ne 0 ]] && die "Ejecuta este script como root:  sudo bash install.sh"
@@ -58,12 +59,6 @@ fi
 # ── Preguntas interactivas ────────────────────────────────────
 section "Configuración de la instalación"
 echo ""
-
-# URL del repositorio GitHub
-if [ -z "${GITHUB_REPO:-}" ]; then
-    read -rp "  Repositorio GitHub [https://github.com/usuario/repo.git]: " GITHUB_REPO
-    [[ -z "$GITHUB_REPO" ]] && die "La URL del repositorio es obligatoria."
-fi
 
 # Credenciales de administrador (solo instalación nueva)
 if [ "$IS_UPDATE" = false ]; then
