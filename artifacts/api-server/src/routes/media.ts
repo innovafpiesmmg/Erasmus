@@ -41,9 +41,12 @@ const upload = multer({
 
 const router: IRouter = Router();
 
-router.get("/media", async (_req, res) => {
+router.get("/media", async (req: Request, res: Response) => {
   try {
-    const media = await db.select().from(mediaTable).orderBy(mediaTable.createdAt);
+    const mobilityId = req.query.mobilityId ? Number(req.query.mobilityId) : null;
+    const media = mobilityId
+      ? await db.select().from(mediaTable).where(eq(mediaTable.mobilityId, mobilityId)).orderBy(mediaTable.createdAt)
+      : await db.select().from(mediaTable).orderBy(mediaTable.createdAt);
     res.json(media);
   } catch {
     res.status(500).json({ error: "Failed to fetch media" });

@@ -443,6 +443,22 @@ export const CreateActivityBody = zod.object({
 });
 
 /**
+ * @summary Get activity by ID
+ */
+export const GetActivityParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetActivityResponse = zod.object({
+  id: zod.number(),
+  mobilityId: zod.number().nullish(),
+  title: zod.string(),
+  description: zod.string(),
+  imageUrl: zod.string().nullish(),
+  createdAt: zod.string(),
+});
+
+/**
  * @summary Update an activity
  */
 export const UpdateActivityParams = zod.object({
@@ -479,6 +495,10 @@ export const DeleteActivityResponse = zod.object({
 /**
  * @summary List all media items
  */
+export const GetMediaQueryParams = zod.object({
+  mobilityId: zod.coerce.number().optional(),
+});
+
 export const GetMediaResponseItem = zod.object({
   id: zod.number(),
   url: zod.string(),
@@ -500,12 +520,12 @@ export const CreateMediaBody = zod.object({
 });
 
 /**
- * @summary Upload a media file (image or video)
+ * @summary Upload an image file
  */
 export const UploadMediaBody = zod.object({
   file: zod
     .instanceof(File)
-    .describe("Image or video file to upload (max 20 MB)"),
+    .describe("Image file to upload (JPEG, PNG, GIF, WebP — max 20 MB)"),
   caption: zod.string().nullish(),
   mobilityId: zod.number().nullish(),
 });

@@ -394,6 +394,25 @@ paths:
                 $ref: "#/components/schemas/Activity"
 
   /activities/{id}:
+    get:
+      operationId: getActivity
+      tags: [activities]
+      summary: Get activity by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+        "404":
+          description: Not found
     put:
       operationId: updateActivity
       tags: [activities]
@@ -441,6 +460,12 @@ paths:
       operationId: getMedia
       tags: [media]
       summary: List all media items
+      parameters:
+        - name: mobilityId
+          in: query
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: List of media items

@@ -11,6 +11,9 @@ import AdminMobilities from "@/pages/admin-mobilities";
 import AdminActivities from "@/pages/admin-activities";
 import AdminMedia from "@/pages/admin-media";
 import AdminSettings from "@/pages/admin-settings";
+import ActivityDetail from "@/pages/activity-detail";
+import MobilityDetail from "@/pages/mobility-detail";
+import Gallery from "@/pages/gallery";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,6 +28,9 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
+      <Route path="/actividades/:id" component={ActivityDetail} />
+      <Route path="/movilidades/:id" component={MobilityDetail} />
+      <Route path="/galeria" component={Gallery} />
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/socios" component={AdminPartners} />

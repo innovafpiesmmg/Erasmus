@@ -28,7 +28,7 @@ export interface AuthResponse {
 }
 
 export interface UploadMediaBody {
-  /** Image or video file to upload (max 20 MB) */
+  /** Image file to upload (JPEG, PNG, GIF, WebP — max 20 MB) */
   file: Blob;
   caption?: string | null;
   mobilityId?: number | null;
@@ -217,4 +217,8 @@ export interface CreateMediaBody {
 
 export type GetUpcomingMobilitiesParams = {
   limit?: number;
+};
+
+export type GetMediaParams = {
+  mobilityId?: number;
 };

@@ -25,6 +25,7 @@ import type {
   CreatePartnerBody,
   DashboardSummary,
   ErrorResponse,
+  GetMediaParams,
   GetUpcomingMobilitiesParams,
   HealthStatus,
   LoginBody,
@@ -1707,6 +1708,93 @@ export const useCreateActivity = <
 };
 
 /**
+ * @summary Get activity by ID
+ */
+export const getGetActivityUrl = (id: number) => {
+  return `/api/activities/${id}`;
+};
+
+export const getActivity = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Activity> => {
+  return customFetch<Activity>(getGetActivityUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetActivityQueryKey = (id: number) => {
+  return [`/api/activities/${id}`] as const;
+};
+
+export const getGetActivityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getActivity>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivity>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetActivityQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivity>>> = ({
+    signal,
+  }) => getActivity(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getActivity>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetActivityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getActivity>>
+>;
+export type GetActivityQueryError = ErrorType<void>;
+
+/**
+ * @summary Get activity by ID
+ */
+
+export function useGetActivity<
+  TData = Awaited<ReturnType<typeof getActivity>>,
+  TError = ErrorType<void>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getActivity>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetActivityQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Update an activity
  */
 export const getUpdateActivityUrl = (id: number) => {
@@ -1880,35 +1968,57 @@ export const useDeleteActivity = <
 /**
  * @summary List all media items
  */
-export const getGetMediaUrl = () => {
-  return `/api/media`;
+export const getGetMediaUrl = (params?: GetMediaParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/media?${stringifiedParams}`
+    : `/api/media`;
 };
 
-export const getMedia = async (options?: RequestInit): Promise<Media[]> => {
-  return customFetch<Media[]>(getGetMediaUrl(), {
+export const getMedia = async (
+  params?: GetMediaParams,
+  options?: RequestInit,
+): Promise<Media[]> => {
+  return customFetch<Media[]>(getGetMediaUrl(params), {
     ...options,
     method: "GET",
   });
 };
 
-export const getGetMediaQueryKey = () => {
-  return [`/api/media`] as const;
+export const getGetMediaQueryKey = (params?: GetMediaParams) => {
+  return [`/api/media`, ...(params ? [params] : [])] as const;
 };
 
 export const getGetMediaQueryOptions = <
   TData = Awaited<ReturnType<typeof getMedia>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getMedia>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}) => {
+>(
+  params?: GetMediaParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMedia>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
   const { query: queryOptions, request: requestOptions } = options ?? {};
 
-  const queryKey = queryOptions?.queryKey ?? getGetMediaQueryKey();
+  const queryKey = queryOptions?.queryKey ?? getGetMediaQueryKey(params);
 
   const queryFn: QueryFunction<Awaited<ReturnType<typeof getMedia>>> = ({
     signal,
-  }) => getMedia({ signal, ...requestOptions });
+  }) => getMedia(params, { signal, ...requestOptions });
 
   return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
     Awaited<ReturnType<typeof getMedia>>,
@@ -1929,11 +2039,18 @@ export type GetMediaQueryError = ErrorType<unknown>;
 export function useGetMedia<
   TData = Awaited<ReturnType<typeof getMedia>>,
   TError = ErrorType<unknown>,
->(options?: {
-  query?: UseQueryOptions<Awaited<ReturnType<typeof getMedia>>, TError, TData>;
-  request?: SecondParameter<typeof customFetch>;
-}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
-  const queryOptions = getGetMediaQueryOptions(options);
+>(
+  params?: GetMediaParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMedia>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMediaQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
@@ -2029,7 +2146,7 @@ export const useCreateMedia = <
 };
 
 /**
- * @summary Upload a media file (image or video)
+ * @summary Upload an image file
  */
 export const getUploadMediaUrl = () => {
   return `/api/media/upload`;
@@ -2106,7 +2223,7 @@ export type UploadMediaMutationBody = BodyType<UploadMediaBody>;
 export type UploadMediaMutationError = ErrorType<ErrorResponse>;
 
 /**
- * @summary Upload a media file (image or video)
+ * @summary Upload an image file
  */
 export const useUploadMedia = <
   TError = ErrorType<ErrorResponse>,

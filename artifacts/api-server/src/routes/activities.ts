@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, activitiesTable } from "@workspace/db";
+import type { Request, Response } from "express";
 import {
   CreateActivityBody,
   UpdateActivityParams,
@@ -16,6 +17,24 @@ router.get("/activities", async (_req, res) => {
     res.json(activities);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch activities" });
+  }
+});
+
+router.get("/activities/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id) || id < 1) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const [activity] = await db.select().from(activitiesTable).where(eq(activitiesTable.id, id)).limit(1);
+    if (!activity) {
+      res.status(404).json({ error: "Activity not found" });
+      return;
+    }
+    res.json(activity);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch activity" });
   }
 });
 

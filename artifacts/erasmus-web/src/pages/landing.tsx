@@ -1,7 +1,7 @@
 import { useGetPartners, useGetMobilities, useGetSettings, useGetActivities, useGetMedia } from "@workspace/api-client-react";
 import type { Partner, MobilityWithPartner, Settings, Activity, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, Users, Leaf, Camera } from "lucide-react";
+import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera } from "lucide-react";
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
@@ -295,25 +295,30 @@ function MobilitiesTimeline({ mobilities }: { mobilities: MobilityWithPartner[] 
                   <span className="text-white text-xs font-bold text-center leading-tight">{m.workPackage}</span>
                 </div>
 
-                <div className={`flex-1 bg-white rounded-xl border ${isPast ? "border-slate-100" : "border-[#003399]/20"} p-5 shadow-sm`}>
-                  <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
-                    <div>
-                      <div className="font-semibold text-slate-900">{m.partner?.name}</div>
-                      <div className="text-xs text-slate-500">{m.partner?.city}, {m.partner?.country} {COUNTRY_FLAGS[m.partner?.country] || ""}</div>
+                <Link href={`/movilidades/${m.id}`} className="flex-1">
+                  <div className={`bg-white rounded-xl border ${isPast ? "border-slate-100" : "border-[#003399]/20"} p-5 shadow-sm hover:shadow-md hover:border-[#003399]/30 transition-all cursor-pointer`}>
+                    <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
+                      <div>
+                        <div className="font-semibold text-slate-900">{m.partner?.name}</div>
+                        <div className="text-xs text-slate-500">{m.partner?.city}, {m.partner?.country} {COUNTRY_FLAGS[m.partner?.country] || ""}</div>
+                      </div>
+                      <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isPast ? "bg-slate-100 text-slate-500" : "bg-[#003399]/10 text-[#003399]"}`}>
+                        {isPast ? "Completada" : "Próxima"}
+                      </span>
                     </div>
-                    <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${isPast ? "bg-slate-100 text-slate-500" : "bg-[#003399]/10 text-[#003399]"}`}>
-                      {isPast ? "Completada" : "Próxima"}
-                    </span>
+                    <div className="text-sm font-medium text-slate-700 mb-1">{m.theme}</div>
+                    <div className="text-xs text-slate-500 flex items-center gap-1.5">
+                      <Calendar size={12} />
+                      {formatDate(m.startDate)} — {formatDate(m.endDate)}
+                    </div>
+                    {m.description && (
+                      <p className="text-xs text-slate-600 mt-2 line-clamp-2">{m.description}</p>
+                    )}
+                    <div className="text-xs text-[#003399] font-medium mt-3 flex items-center gap-1">
+                      Ver detalles <ChevronRight size={11} />
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-slate-700 mb-1">{m.theme}</div>
-                  <div className="text-xs text-slate-500 flex items-center gap-1.5">
-                    <Calendar size={12} />
-                    {formatDate(m.startDate)} — {formatDate(m.endDate)}
-                  </div>
-                  {m.description && (
-                    <p className="text-xs text-slate-600 mt-2 line-clamp-2">{m.description}</p>
-                  )}
-                </div>
+                </Link>
               </motion.div>
             );
           })}
@@ -363,6 +368,19 @@ function GallerySection({ media }: { media: Media[] }) {
             </motion.div>
           ))}
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mt-10"
+        >
+          <Link href="/galeria">
+            <button className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-lg" style={{ background: "#003399" }}>
+              Ver galería completa <ChevronRight size={15} />
+            </button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
@@ -393,14 +411,20 @@ function ActivitiesSection({ activities }: { activities: Activity[] }) {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.08 }}
-              className="bg-slate-50 rounded-xl p-6 border border-slate-100 hover:border-[#003399]/20 hover:shadow-md transition-all"
               data-testid={`activity-card-${a.id}`}
             >
-              <div className="w-8 h-8 rounded-lg bg-[#003399]/10 flex items-center justify-center mb-4">
-                <Leaf size={16} className="text-[#003399]" />
-              </div>
-              <h3 className="font-semibold text-slate-900 mb-2 leading-tight">{a.title}</h3>
-              <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">{a.description}</p>
+              <Link href={`/actividades/${a.id}`}>
+                <div className="bg-slate-50 rounded-xl p-6 border border-slate-100 hover:border-[#003399]/20 hover:shadow-md transition-all cursor-pointer h-full">
+                  <div className="w-8 h-8 rounded-lg bg-[#003399]/10 flex items-center justify-center mb-4">
+                    <Leaf size={16} className="text-[#003399]" />
+                  </div>
+                  <h3 className="font-semibold text-slate-900 mb-2 leading-tight">{a.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed line-clamp-3">{a.description}</p>
+                  <div className="text-xs text-[#003399] font-medium mt-3 flex items-center gap-1">
+                    Leer más <ChevronRight size={12} />
+                  </div>
+                </div>
+              </Link>
             </motion.div>
           ))}
         </div>
