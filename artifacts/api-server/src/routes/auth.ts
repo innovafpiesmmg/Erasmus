@@ -4,6 +4,13 @@ import crypto from "crypto";
 
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
+// SECURE_COOKIES=true → Secure flag on cookie (requires HTTPS, e.g. Cloudflare Tunnel)
+// SECURE_COOKIES=false → no Secure flag (plain HTTP deployments)
+// If not set, defaults to true in production, false in development
+const SECURE_COOKIES =
+  process.env.SECURE_COOKIES === "true" ||
+  (IS_PRODUCTION && process.env.SECURE_COOKIES !== "false");
+
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
@@ -34,7 +41,7 @@ router.post("/admin/login", (req: Request, res: Response) => {
       "Path=/",
       "HttpOnly",
       "SameSite=Lax",
-      IS_PRODUCTION ? "Secure" : "",
+      SECURE_COOKIES ? "Secure" : "",
       "Max-Age=86400",
     ]
       .filter(Boolean)
