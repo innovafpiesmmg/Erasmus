@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import { eq } from "drizzle-orm";
 import { db, settingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
@@ -28,6 +29,7 @@ router.put("/settings", async (req, res) => {
     const updated = await db
       .update(settingsTable)
       .set({ ...body, updatedAt: new Date() })
+      .where(eq(settingsTable.id, rows[0].id))
       .returning();
     res.json(updated[0]);
   } catch (err) {

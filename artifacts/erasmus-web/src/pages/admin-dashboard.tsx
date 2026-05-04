@@ -1,5 +1,5 @@
 import { useGetDashboardSummary, useGetUpcomingMobilities } from "@workspace/api-client-react";
-import { Users, Calendar, BookOpen, Image, TrendingUp, Clock } from "lucide-react";
+import { Users, Calendar, BookOpen, Image, TrendingUp, Clock, type LucideIcon } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -11,7 +11,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
+function StatCard({ icon: Icon, label, value, color }: { icon: LucideIcon; label: string; value: number; color: string }) {
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-5 flex items-center gap-4 shadow-sm" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ background: `${color}18` }}>
