@@ -39,11 +39,22 @@ function HeroSection({ settings }: { settings: any }) {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.7 }}
+          className="flex items-center justify-center gap-6 mb-8"
+        >
+          <img src="/logo-ies-nobg.png" alt="IES Manuel Martín González" className="h-16 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          <div className="w-px h-12 bg-white/30" />
+          <img src="/logo-erasmus.png" alt="Erasmus+" className="h-12 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.1 }}
           className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-white/80 text-sm mb-8"
         >
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          Proyecto Erasmus+ SEA · 2024–2027
+          Proyecto Erasmus+ SEA · 2025–2027
         </motion.div>
 
         <motion.h1
@@ -413,7 +424,7 @@ function Footer({ settings }: { settings: any }) {
           </div>
         </div>
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-white/40">
-          <span>© 2024–2027 IES Manuel Martín González · Proyecto financiado por la Unión Europea</span>
+          <span>© 2025–2027 IES Manuel Martín González · Proyecto financiado por la Unión Europea</span>
           <Link href="/admin/login" className="hover:text-white/70 transition-colors">Acceso administración</Link>
         </div>
       </div>
@@ -433,8 +444,16 @@ function Navbar({ settings }: { settings: any }) {
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-white/95 backdrop-blur-sm shadow-sm border-b border-slate-100" : "bg-transparent"}`}>
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-        <div className={`font-bold text-sm ${scrolled ? "text-[#003399]" : "text-white"}`}>
-          {settings?.siteTitle || "IES Manuel Martín González"}
+        <div className="flex items-center gap-3">
+          <img
+            src={scrolled ? "/logo-ies.jpg" : "/logo-ies-nobg.png"}
+            alt="IES Manuel Martín González"
+            className="h-9 w-auto object-contain"
+            style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
+          />
+          <div className={`font-bold text-sm leading-tight hidden sm:block ${scrolled ? "text-[#003399]" : "text-white"}`}>
+            {settings?.siteTitle || "IES Manuel Martín González"}
+          </div>
         </div>
         <div className="flex items-center gap-6">
           {[
@@ -451,6 +470,12 @@ function Navbar({ settings }: { settings: any }) {
               {item.label}
             </a>
           ))}
+          <img
+            src="/logo-erasmus.png"
+            alt="Erasmus+"
+            className="h-8 w-auto object-contain hidden md:block"
+            style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
+          />
         </div>
       </div>
     </nav>

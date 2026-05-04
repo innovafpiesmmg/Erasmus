@@ -1,7 +1,7 @@
 # Erasmus+ Platform — "The small big changes"
 
 **IES Manuel Martín González** · Guía de Isora, Tenerife, Spain  
-Erasmus+ SEA project platform for 6 European partner countries (2024–2027).
+Erasmus+ SEA project platform for 6 European partner countries (2025–2027).
 
 ---
 
@@ -89,9 +89,18 @@ Tables: `settings`, `partners`, `mobilities`, `activities`, `media`
 Seeded data:
 - 6 partners (1 coordinator: IES MMG Spain, + Turkey, Latvia, Romania, Portugal, Macedonia)
 - 6 mobilities (WP2–WP7, Nov 2025 – May 2027)
-- 7 activities
-- 5 media items
+- 12 activities (2 per mobility/WP)
+- 6 media items
 - 1 settings row (full project info)
+
+## Logos
+
+Logo files served from `artifacts/erasmus-web/public/`:
+- `/logo-ies.jpg` — IES MMG logo (white background, use on light surfaces)
+- `/logo-ies-nobg.png` — IES MMG logo (transparent, apply CSS filter for dark surfaces)
+- `/logo-erasmus.png` — Erasmus+ logo (transparent)
+
+Logos appear in: Navbar (both), Hero section (both), Admin login (both), Admin sidebar (IES + Erasmus+).
 
 ---
 

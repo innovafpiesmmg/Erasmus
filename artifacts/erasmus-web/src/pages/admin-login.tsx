@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Lock, User, Globe } from "lucide-react";
+import { Lock, User } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Introduce el nombre de usuario"),
@@ -41,14 +41,10 @@ export default function AdminLogin() {
     <div className="min-h-screen flex" style={{ background: "linear-gradient(135deg, #001a6e 0%, #003399 50%, #2D5A27 100%)" }}>
       <div className="flex-1 flex flex-col items-center justify-center p-8">
         <div className="w-full max-w-md">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <Globe size={20} className="text-white" />
-            </div>
-            <div>
-              <div className="font-bold text-white text-sm">IES Manuel Martín González</div>
-              <div className="text-white/60 text-xs">Erasmus+ SEA · Panel de Administración</div>
-            </div>
+          <div className="flex items-center gap-4 mb-10">
+            <img src="/logo-ies-nobg.png" alt="IES Manuel Martín González" className="h-12 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+            <div className="w-px h-8 bg-white/30" />
+            <img src="/logo-erasmus.png" alt="Erasmus+" className="h-9 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           </div>
 
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
@@ -117,8 +113,18 @@ export default function AdminLogin() {
 
       <div className="hidden lg:flex flex-1 items-center justify-center p-12">
         <div className="max-w-sm text-white">
-          <div className="text-5xl font-bold mb-4 leading-tight">Gestiona tu proyecto Erasmus+</div>
-          <p className="text-white/60 text-lg">Administra socios, movilidades, actividades y contenidos desde un solo lugar.</p>
+          <div className="flex items-center gap-4 mb-8">
+            <img src="/logo-ies-nobg.png" alt="IES MMG" className="h-20 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+            <div className="w-px h-14 bg-white/30" />
+            <img src="/logo-erasmus.png" alt="Erasmus+" className="h-14 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          </div>
+          <div className="text-4xl font-bold mb-3 leading-tight">Los pequeños grandes cambios</div>
+          <p className="text-white/60 text-base mb-4">Proyecto Erasmus+ KA220-SCH · Concienciación social y ambiental · 2025–2027</p>
+          <div className="flex flex-wrap gap-2 mt-6">
+            {["🇪🇸 España","🇹🇷 Turquía","🇱🇻 Letonia","🇷🇴 Rumanía","🇵🇹 Portugal","🇲🇰 Macedonia"].map(c => (
+              <span key={c} className="text-xs bg-white/10 border border-white/20 rounded-full px-3 py-1 text-white/80">{c}</span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

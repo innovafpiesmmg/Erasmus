@@ -1,7 +1,7 @@
 import { useGetAdminMe, useAdminLogout, getGetAdminMeQueryKey } from "@workspace/api-client-react";
 import { Link, useLocation, Redirect } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Globe, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -40,15 +40,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-5 border-b border-slate-100">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#003399" }}>
-            <Globe size={16} className="text-white" />
-          </div>
+      <div className="p-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <img src="/logo-ies.jpg" alt="IES MMG" className="h-8 w-auto object-contain rounded" />
           <div>
             <div className="font-bold text-slate-900 text-xs leading-tight">IES MMG</div>
             <div className="text-xs text-slate-400">Erasmus+ SEA</div>
           </div>
+        </div>
+        <div className="mt-2">
+          <img src="/logo-erasmus.png" alt="Erasmus+" className="h-5 w-auto object-contain opacity-70" />
         </div>
       </div>
 
