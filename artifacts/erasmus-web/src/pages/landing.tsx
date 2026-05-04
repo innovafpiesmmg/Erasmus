@@ -45,7 +45,7 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
         >
           <img src="/logo-ies-nobg.png" alt="IES Manuel Martín González" className="h-16 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
           <div className="w-px h-12 bg-white/30" />
-          <img src="/logo-erasmus.png" alt="Erasmus+" className="h-12 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
+          <img src="/logo-erasmus.png" alt="Erasmus+" className="h-24 w-auto object-contain" style={{ filter: "brightness(0) invert(1)" }} />
         </motion.div>
 
         <motion.div
@@ -474,7 +474,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
           <img
             src="/logo-erasmus.png"
             alt="Erasmus+"
-            className="h-8 w-auto object-contain hidden md:block"
+            className="h-16 w-auto object-contain hidden md:block"
             style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
           />
         </div>
