@@ -472,7 +472,7 @@ paths:
     post:
       operationId: uploadMedia
       tags: [media]
-      summary: Upload a media file (image or video)
+      summary: Upload an image file
       requestBody:
         required: true
         content:
@@ -572,7 +572,7 @@ components:
         file:
           type: string
           format: binary
-          description: Image or video file to upload (max 20 MB)
+          description: Image file to upload (JPEG, PNG, GIF, WebP — max 20 MB)
         caption:
           type: string
           nullable: true
