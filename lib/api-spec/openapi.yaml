@@ -877,7 +877,7 @@ components:
           type: ["string", "null"]
         mediaType:
           type: string
-          enum: [image, video]
+          enum: [image]
         mobilityId:
           type: ["integer", "null"]
         createdAt:
@@ -897,7 +897,7 @@ components:
           type: ["string", "null"]
         mediaType:
           type: string
-          enum: [image, video]
+          enum: [image]
         mobilityId:
           type: ["integer", "null"]
       required:

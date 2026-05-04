@@ -483,7 +483,7 @@ export const GetMediaResponseItem = zod.object({
   id: zod.number(),
   url: zod.string(),
   caption: zod.string().nullish(),
-  mediaType: zod.enum(["image", "video"]),
+  mediaType: zod.enum(["image"]),
   mobilityId: zod.number().nullish(),
   createdAt: zod.string(),
 });
@@ -495,7 +495,7 @@ export const GetMediaResponse = zod.array(GetMediaResponseItem);
 export const CreateMediaBody = zod.object({
   url: zod.string(),
   caption: zod.string().nullish(),
-  mediaType: zod.enum(["image", "video"]),
+  mediaType: zod.enum(["image"]),
   mobilityId: zod.number().nullish(),
 });
 

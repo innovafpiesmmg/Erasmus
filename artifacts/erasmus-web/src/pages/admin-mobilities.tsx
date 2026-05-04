@@ -2,6 +2,7 @@ import {
   useGetMobilities, useCreateMobility, useUpdateMobility, useDeleteMobility,
   useGetPartners, getGetMobilitiesQueryKey,
 } from "@workspace/api-client-react";
+import type { MobilityWithPartner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -27,7 +28,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function MobilityModal({ mobility, onClose }: { mobility?: any; onClose: () => void }) {
+function MobilityModal({ mobility, onClose }: { mobility?: MobilityWithPartner; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: partners = [] } = useGetPartners();
   const create = useCreateMobility({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetMobilitiesQueryKey() }); onClose(); } } });

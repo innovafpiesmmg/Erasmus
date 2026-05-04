@@ -25,10 +25,6 @@ const ALLOWED_MIME = new Set([
   "image/png",
   "image/gif",
   "image/webp",
-  "image/svg+xml",
-  "video/mp4",
-  "video/webm",
-  "video/ogg",
 ]);
 
 const upload = multer({
@@ -61,7 +57,7 @@ router.post("/media/upload", upload.single("file"), async (req: Request, res: Re
       return;
     }
     const fileUrl = `/uploads/${req.file.filename}`;
-    const mediaType = req.file.mimetype.startsWith("video/") ? "video" : "image";
+    const mediaType = "image";
     const caption = typeof req.body.caption === "string" ? req.body.caption || null : null;
     const mobilityId = req.body.mobilityId ? Number(req.body.mobilityId) : null;
 

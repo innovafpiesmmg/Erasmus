@@ -8,20 +8,11 @@ const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  if (IS_PRODUCTION) {
-    throw new Error(
-      "ADMIN_USERNAME and ADMIN_PASSWORD must be set in production. " +
-        "Configure them in the Replit Secrets panel.",
-    );
-  }
-  console.warn(
-    "[auth] ADMIN_USERNAME / ADMIN_PASSWORD not set — using dev defaults " +
-      "(admin / erasmus2025). Set both secrets before deploying to production.",
+  throw new Error(
+    "ADMIN_USERNAME and ADMIN_PASSWORD must be set. " +
+      "Configure them in the Replit Secrets panel before starting the server.",
   );
 }
-
-const effectiveUsername = ADMIN_USERNAME ?? "admin";
-const effectivePassword = ADMIN_PASSWORD ?? "erasmus2025";
 
 export type SessionData = { authenticated: boolean; username: string };
 export const SESSION_STORE: Map<string, SessionData> = new Map();
@@ -35,7 +26,7 @@ router.post("/admin/login", (req: Request, res: Response) => {
     return;
   }
   const { username, password } = parsed.data;
-  if (username === effectiveUsername && password === effectivePassword) {
+  if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     const sessionId = crypto.randomUUID();
     SESSION_STORE.set(sessionId, { authenticated: true, username });
     const cookieFlags = [

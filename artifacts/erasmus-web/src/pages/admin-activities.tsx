@@ -2,6 +2,7 @@ import {
   useGetActivities, useCreateActivity, useUpdateActivity, useDeleteActivity,
   useGetMobilities, getGetActivitiesQueryKey,
 } from "@workspace/api-client-react";
+import type { Activity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -18,7 +19,7 @@ const activitySchema = z.object({
 });
 type ActivityForm = z.infer<typeof activitySchema>;
 
-function ActivityModal({ activity, onClose }: { activity?: any; onClose: () => void }) {
+function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: mobilities = [] } = useGetMobilities();
   const create = useCreateActivity({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetActivitiesQueryKey() }); onClose(); } } });

@@ -10,7 +10,6 @@ import AdminLayout from "@/components/admin-layout";
 const urlSchema = z.object({
   url: z.string().url("URL de imagen inválida"),
   caption: z.string().optional().nullable(),
-  mediaType: z.enum(["image", "video"]).default("image"),
   mobilityId: z.coerce.number().optional().nullable(),
 });
 type UrlForm = z.infer<typeof urlSchema>;
@@ -46,11 +45,11 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
 
   const form = useForm<UrlForm>({
     resolver: zodResolver(urlSchema),
-    defaultValues: { mediaType: "image" },
+    defaultValues: { url: "", caption: "", mobilityId: null },
   });
 
   const onUrlSubmit = (data: UrlForm) => {
-    create.mutate({ data: { ...data, caption: data.caption || null, mobilityId: data.mobilityId || null } });
+    create.mutate({ data: { ...data, mediaType: "image", caption: data.caption || null, mobilityId: data.mobilityId || null } });
   };
 
   const handleFileSelect = (file: File) => {
@@ -70,7 +69,7 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
         },
       },
       {
-        onError: (err: any) => {
+        onError: (err: Error) => {
           setUploadError(err?.message ?? "Error al subir el archivo");
         },
       },
@@ -126,13 +125,13 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
                 <div>
                   <Upload size={28} className="mx-auto mb-2 text-slate-300" />
                   <p className="text-sm text-slate-500">Arrastra un archivo aquí o <span className="text-[#003399] font-medium">selecciona uno</span></p>
-                  <p className="text-xs text-slate-400 mt-1">Imágenes o vídeos · Máx. 20 MB</p>
+                  <p className="text-xs text-slate-400 mt-1">Imágenes · Máx. 20 MB</p>
                 </div>
               )}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*,video/mp4,video/webm,video/ogg"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
               />
@@ -177,7 +176,7 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
         ) : (
           <form onSubmit={form.handleSubmit(onUrlSubmit)} className="p-5 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">URL de la imagen/vídeo *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">URL de la imagen *</label>
               <input
                 {...form.register("url")}
                 type="url"
@@ -186,18 +185,6 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
               />
               {form.formState.errors.url && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.url.message}</p>}
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">Tipo</label>
-              <select
-                {...form.register("mediaType")}
-                data-testid="select-media-type"
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
-              >
-                <option value="image">Imagen</option>
-                <option value="video">Vídeo</option>
-              </select>
             </div>
 
             <div>
@@ -273,17 +260,13 @@ export default function AdminMedia() {
         <div className="text-center py-20 text-slate-400">
           <Image size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">No hay archivos media aún</p>
-          <p className="text-xs mt-1">Sube imágenes o vídeos usando el botón de arriba</p>
+          <p className="text-xs mt-1">Sube imágenes usando el botón de arriba</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {media.map((m) => (
             <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
-              {m.mediaType === "video" ? (
-                <video src={m.url} className="w-full h-full object-cover" muted />
-              ) : (
-                <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
-              )}
+              <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <button
                   onClick={() => { if (confirm("¿Eliminar este archivo?")) deleteMedia.mutate({ id: m.id }); }}
@@ -298,11 +281,6 @@ export default function AdminMedia() {
                   <p className="text-white text-xs truncate">{m.caption}</p>
                 </div>
               )}
-              <div className="absolute top-2 right-2">
-                <span className="text-xs bg-white/80 backdrop-blur-sm px-1.5 py-0.5 rounded text-slate-700 font-medium">
-                  {m.mediaType === "video" ? "VID" : "IMG"}
-                </span>
-              </div>
             </div>
           ))}
         </div>

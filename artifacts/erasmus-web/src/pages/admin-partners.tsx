@@ -1,4 +1,5 @@
 import { useGetPartners, useCreatePartner, useUpdatePartner, useDeletePartner, getGetPartnersQueryKey } from "@workspace/api-client-react";
+import type { Partner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -27,7 +28,7 @@ const partnerSchema = z.object({
 });
 type PartnerForm = z.infer<typeof partnerSchema>;
 
-function PartnerModal({ partner, onClose }: { partner?: any; onClose: () => void }) {
+function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => void }) {
   const qc = useQueryClient();
   const create = useCreatePartner({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }); onClose(); } } });
   const update = useUpdatePartner({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }); onClose(); } } });
