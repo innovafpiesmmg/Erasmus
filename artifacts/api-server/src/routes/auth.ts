@@ -2,12 +2,15 @@ import { Router, type IRouter, type Request, type Response } from "express";
 import { AdminLoginBody } from "@workspace/api-zod";
 import crypto from "crypto";
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+const DEV_USERNAME = "admin";
+const DEV_PASSWORD = "erasmus2025";
 
-if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
-  throw new Error(
-    "ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required.",
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME ?? DEV_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? DEV_PASSWORD;
+
+if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+  console.warn(
+    "[auth] ADMIN_USERNAME / ADMIN_PASSWORD env vars not set — falling back to dev defaults. Set them for production.",
   );
 }
 

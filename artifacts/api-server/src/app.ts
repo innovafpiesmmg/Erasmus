@@ -2,10 +2,14 @@ import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import cookieParser from "cookie-parser";
+import path from "path";
 import router from "./routes";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
+
+const UPLOADS_DIR = path.resolve(process.cwd(), "uploads");
+app.use("/uploads", express.static(UPLOADS_DIR));
 
 app.use(
   pinoHttp({
