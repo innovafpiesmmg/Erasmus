@@ -500,6 +500,17 @@ export const CreateMediaBody = zod.object({
 });
 
 /**
+ * @summary Upload a media file (image or video)
+ */
+export const UploadMediaBody = zod.object({
+  file: zod
+    .instanceof(File)
+    .describe("Image or video file to upload (max 20 MB)"),
+  caption: zod.string().nullish(),
+  mobilityId: zod.number().nullish(),
+});
+
+/**
  * @summary Delete a media item
  */
 export const DeleteMediaParams = zod.object({

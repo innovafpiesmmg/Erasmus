@@ -468,6 +468,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/Media"
 
+  /media/upload:
+    post:
+      operationId: uploadMedia
+      tags: [media]
+      summary: Upload a media file (image or video)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: "#/components/schemas/UploadMediaBody"
+      responses:
+        "201":
+          description: Uploaded and created media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Media"
+        "400":
+          description: Invalid file or request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /media/{id}:
     delete:
       operationId: deleteMedia
@@ -534,6 +565,22 @@ components:
       required:
         - authenticated
         - username
+
+    UploadMediaBody:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+          description: Image or video file to upload (max 20 MB)
+        caption:
+          type: string
+          nullable: true
+        mobilityId:
+          type: integer
+          nullable: true
+      required:
+        - file
 
     DashboardSummary:
       type: object

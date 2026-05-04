@@ -37,6 +37,7 @@ import type {
   PartnerWithMobilities,
   Settings,
   UpdateSettingsBody,
+  UploadMediaBody,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -2025,6 +2026,106 @@ export const useCreateMedia = <
   TContext
 > => {
   return useMutation(getCreateMediaMutationOptions(options));
+};
+
+/**
+ * @summary Upload a media file (image or video)
+ */
+export const getUploadMediaUrl = () => {
+  return `/api/media/upload`;
+};
+
+export const uploadMedia = async (
+  uploadMediaBody: UploadMediaBody,
+  options?: RequestInit,
+): Promise<Media> => {
+  const formData = new FormData();
+  formData.append(`file`, uploadMediaBody.file);
+  if (
+    uploadMediaBody.caption !== undefined &&
+    uploadMediaBody.caption !== null
+  ) {
+    formData.append(`caption`, uploadMediaBody.caption);
+  }
+  if (
+    uploadMediaBody.mobilityId !== undefined &&
+    uploadMediaBody.mobilityId !== null
+  ) {
+    formData.append(`mobilityId`, uploadMediaBody.mobilityId.toString());
+  }
+
+  return customFetch<Media>(getUploadMediaUrl(), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadMediaMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMedia>>,
+    TError,
+    { data: BodyType<UploadMediaBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadMedia>>,
+  TError,
+  { data: BodyType<UploadMediaBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadMedia"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadMedia>>,
+    { data: BodyType<UploadMediaBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return uploadMedia(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadMediaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadMedia>>
+>;
+export type UploadMediaMutationBody = BodyType<UploadMediaBody>;
+export type UploadMediaMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Upload a media file (image or video)
+ */
+export const useUploadMedia = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadMedia>>,
+    TError,
+    { data: BodyType<UploadMediaBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadMedia>>,
+  TError,
+  { data: BodyType<UploadMediaBody> },
+  TContext
+> => {
+  return useMutation(getUploadMediaMutationOptions(options));
 };
 
 /**

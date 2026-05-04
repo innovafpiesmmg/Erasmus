@@ -27,6 +27,13 @@ export interface AuthResponse {
   username: string;
 }
 
+export interface UploadMediaBody {
+  /** Image or video file to upload (max 20 MB) */
+  file: Blob;
+  caption?: string | null;
+  mobilityId?: number | null;
+}
+
 export interface DashboardSummary {
   totalPartners: number;
   totalMobilities: number;

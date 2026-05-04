@@ -1,4 +1,4 @@
-import { useGetMedia, useCreateMedia, useDeleteMedia, useGetMobilities, getGetMediaQueryKey } from "@workspace/api-client-react";
+import { useGetMedia, useCreateMedia, useDeleteMedia, useUploadMedia, useGetMobilities, getGetMediaQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -27,8 +27,16 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
     },
   });
 
+  const upload = useUploadMedia({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetMediaQueryKey() });
+        onClose();
+      },
+    },
+  });
+
   const [tab, setTab] = useState<"upload" | "url">("upload");
-  const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -50,32 +58,23 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
     setUploadError(null);
   };
 
-  const handleFileUpload = async () => {
+  const handleFileUpload = () => {
     if (!selectedFile) return;
-    setUploading(true);
     setUploadError(null);
-    try {
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      if (uploadCaption) formData.append("caption", uploadCaption);
-      if (uploadMobilityId) formData.append("mobilityId", uploadMobilityId);
-
-      const res = await fetch("/api/media/upload", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Error desconocido" }));
-        throw new Error(err.error || "Error al subir el archivo");
-      }
-      qc.invalidateQueries({ queryKey: getGetMediaQueryKey() });
-      onClose();
-    } catch (err: any) {
-      setUploadError(err.message ?? "Error al subir el archivo");
-    } finally {
-      setUploading(false);
-    }
+    upload.mutate(
+      {
+        data: {
+          file: selectedFile,
+          caption: uploadCaption || null,
+          mobilityId: uploadMobilityId ? Number(uploadMobilityId) : null,
+        },
+      },
+      {
+        onError: (err: any) => {
+          setUploadError(err?.message ?? "Error al subir el archivo");
+        },
+      },
+    );
   };
 
   return (
@@ -167,11 +166,11 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
               <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
               <button
                 onClick={handleFileUpload}
-                disabled={!selectedFile || uploading}
+                disabled={!selectedFile || upload.isPending}
                 className="flex-1 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
                 style={{ background: "#003399" }}
               >
-                {uploading ? "Subiendo..." : "Subir"}
+                {upload.isPending ? "Subiendo..." : "Subir"}
               </button>
             </div>
           </div>
