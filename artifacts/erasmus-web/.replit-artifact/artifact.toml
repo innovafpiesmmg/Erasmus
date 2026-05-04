@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Erasmus+ Platform"
+version = "1.0.0"
+id = "artifacts/erasmus-web"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21961
+
+[services.development]
+run = "pnpm --filter @workspace/erasmus-web run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/erasmus-web", "run", "build" ]
+publicDir = "artifacts/erasmus-web/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21961"
+BASE_PATH = "/"

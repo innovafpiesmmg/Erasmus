@@ -3,13 +3,28 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Erasmus+ Platform API for IES Manuel Martín González
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Admin authentication
+  - name: partners
+    description: Partner schools management
+  - name: mobilities
+    description: Mobility events management
+  - name: activities
+    description: Activity management
+  - name: media
+    description: Media gallery management
+  - name: settings
+    description: Site settings management
+  - name: dashboard
+    description: Dashboard summaries and stats
+
 paths:
   /healthz:
     get:
@@ -24,6 +39,454 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Auth
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [auth]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [auth]
+      summary: Admin logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /admin/me:
+    get:
+      operationId: getAdminMe
+      tags: [auth]
+      summary: Get current admin session
+      responses:
+        "200":
+          description: Current admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # Dashboard
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard summary stats
+      responses:
+        "200":
+          description: Summary statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/upcoming-mobilities:
+    get:
+      operationId: getUpcomingMobilities
+      tags: [dashboard]
+      summary: Get upcoming mobilities
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      responses:
+        "200":
+          description: List of upcoming mobilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MobilityWithPartner"
+
+  # Settings
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get site settings
+      responses:
+        "200":
+          description: Site settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    put:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update site settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSettingsBody"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  # Partners
+  /partners:
+    get:
+      operationId: getPartners
+      tags: [partners]
+      summary: List all partner schools
+      responses:
+        "200":
+          description: List of partners
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Partner"
+    post:
+      operationId: createPartner
+      tags: [partners]
+      summary: Create a new partner
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartnerBody"
+      responses:
+        "201":
+          description: Created partner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partner"
+
+  /partners/{id}:
+    get:
+      operationId: getPartner
+      tags: [partners]
+      summary: Get partner by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Partner details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerWithMobilities"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updatePartner
+      tags: [partners]
+      summary: Update a partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartnerBody"
+      responses:
+        "200":
+          description: Updated partner
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partner"
+    delete:
+      operationId: deletePartner
+      tags: [partners]
+      summary: Delete a partner
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # Mobilities
+  /mobilities:
+    get:
+      operationId: getMobilities
+      tags: [mobilities]
+      summary: List all mobilities
+      responses:
+        "200":
+          description: List of mobilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MobilityWithPartner"
+    post:
+      operationId: createMobility
+      tags: [mobilities]
+      summary: Create a new mobility
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMobilityBody"
+      responses:
+        "201":
+          description: Created mobility
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mobility"
+
+  /mobilities/{id}:
+    get:
+      operationId: getMobility
+      tags: [mobilities]
+      summary: Get mobility by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Mobility with activities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobilityWithActivities"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateMobility
+      tags: [mobilities]
+      summary: Update a mobility
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMobilityBody"
+      responses:
+        "200":
+          description: Updated mobility
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Mobility"
+    delete:
+      operationId: deleteMobility
+      tags: [mobilities]
+      summary: Delete a mobility
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # Activities
+  /activities:
+    get:
+      operationId: getActivities
+      tags: [activities]
+      summary: List all activities
+      responses:
+        "200":
+          description: List of activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: createActivity
+      tags: [activities]
+      summary: Create a new activity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityBody"
+      responses:
+        "201":
+          description: Created activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+
+  /activities/{id}:
+    put:
+      operationId: updateActivity
+      tags: [activities]
+      summary: Update an activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateActivityBody"
+      responses:
+        "200":
+          description: Updated activity
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+    delete:
+      operationId: deleteActivity
+      tags: [activities]
+      summary: Delete an activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  # Media
+  /media:
+    get:
+      operationId: getMedia
+      tags: [media]
+      summary: List all media items
+      responses:
+        "200":
+          description: List of media items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Media"
+    post:
+      operationId: createMedia
+      tags: [media]
+      summary: Create media item (URL-based)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMediaBody"
+      responses:
+        "201":
+          description: Created media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Media"
+
+  /media/{id}:
+    delete:
+      operationId: deleteMedia
+      tags: [media]
+      summary: Delete a media item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +497,362 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    LoginBody:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+
+    AuthResponse:
+      type: object
+      properties:
+        authenticated:
+          type: boolean
+        username:
+          type: string
+      required:
+        - authenticated
+        - username
+
+    DashboardSummary:
+      type: object
+      properties:
+        totalPartners:
+          type: integer
+        totalMobilities:
+          type: integer
+        totalActivities:
+          type: integer
+        totalMedia:
+          type: integer
+        upcomingCount:
+          type: integer
+        pastCount:
+          type: integer
+      required:
+        - totalPartners
+        - totalMobilities
+        - totalActivities
+        - totalMedia
+        - upcomingCount
+        - pastCount
+
+    Settings:
+      type: object
+      properties:
+        id:
+          type: integer
+        siteTitle:
+          type: string
+        projectName:
+          type: string
+        projectDescription:
+          type: string
+        heroTitle:
+          type: string
+        heroSubtitle:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        socialInstagram:
+          type: ["string", "null"]
+        socialTwitter:
+          type: ["string", "null"]
+        socialFacebook:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+      required:
+        - id
+        - siteTitle
+        - projectName
+        - projectDescription
+        - heroTitle
+        - heroSubtitle
+        - email
+        - updatedAt
+
+    UpdateSettingsBody:
+      type: object
+      properties:
+        siteTitle:
+          type: string
+        projectName:
+          type: string
+        projectDescription:
+          type: string
+        heroTitle:
+          type: string
+        heroSubtitle:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        address:
+          type: ["string", "null"]
+        socialInstagram:
+          type: ["string", "null"]
+        socialTwitter:
+          type: ["string", "null"]
+        socialFacebook:
+          type: ["string", "null"]
+
+    Partner:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        oid:
+          type: ["string", "null"]
+        country:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        webUrl:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        socialInstagram:
+          type: ["string", "null"]
+        socialTwitter:
+          type: ["string", "null"]
+        isCoordinator:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - country
+        - city
+        - lat
+        - lng
+        - isCoordinator
+        - createdAt
+
+    PartnerWithMobilities:
+      allOf:
+        - $ref: "#/components/schemas/Partner"
+        - type: object
+          properties:
+            mobilities:
+              type: array
+              items:
+                $ref: "#/components/schemas/Mobility"
+          required:
+            - mobilities
+
+    CreatePartnerBody:
+      type: object
+      properties:
+        name:
+          type: string
+        oid:
+          type: ["string", "null"]
+        country:
+          type: string
+        city:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        webUrl:
+          type: ["string", "null"]
+        logoUrl:
+          type: ["string", "null"]
+        socialInstagram:
+          type: ["string", "null"]
+        socialTwitter:
+          type: ["string", "null"]
+        isCoordinator:
+          type: boolean
+      required:
+        - name
+        - country
+        - city
+        - lat
+        - lng
+        - isCoordinator
+
+    Mobility:
+      type: object
+      properties:
+        id:
+          type: integer
+        partnerId:
+          type: integer
+        workPackage:
+          type: string
+        theme:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        headerImageUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - partnerId
+        - workPackage
+        - theme
+        - startDate
+        - endDate
+        - createdAt
+
+    MobilityWithPartner:
+      allOf:
+        - $ref: "#/components/schemas/Mobility"
+        - type: object
+          properties:
+            partner:
+              $ref: "#/components/schemas/Partner"
+          required:
+            - partner
+
+    MobilityWithActivities:
+      allOf:
+        - $ref: "#/components/schemas/MobilityWithPartner"
+        - type: object
+          properties:
+            activities:
+              type: array
+              items:
+                $ref: "#/components/schemas/Activity"
+          required:
+            - activities
+
+    CreateMobilityBody:
+      type: object
+      properties:
+        partnerId:
+          type: integer
+        workPackage:
+          type: string
+        theme:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        headerImageUrl:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+      required:
+        - partnerId
+        - workPackage
+        - theme
+        - startDate
+        - endDate
+
+    Activity:
+      type: object
+      properties:
+        id:
+          type: integer
+        mobilityId:
+          type: ["integer", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - createdAt
+
+    CreateActivityBody:
+      type: object
+      properties:
+        mobilityId:
+          type: ["integer", "null"]
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+      required:
+        - title
+        - description
+
+    Media:
+      type: object
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+        caption:
+          type: ["string", "null"]
+        mediaType:
+          type: string
+          enum: [image, video]
+        mobilityId:
+          type: ["integer", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - url
+        - mediaType
+        - createdAt
+
+    CreateMediaBody:
+      type: object
+      properties:
+        url:
+          type: string
+        caption:
+          type: ["string", "null"]
+        mediaType:
+          type: string
+          enum: [image, video]
+        mobilityId:
+          type: ["integer", "null"]
+      required:
+        - url
+        - mediaType

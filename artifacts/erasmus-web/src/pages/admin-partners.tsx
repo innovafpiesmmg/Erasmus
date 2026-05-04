@@ -1,0 +1,225 @@
+import { useGetPartners, useCreatePartner, useUpdatePartner, useDeletePartner, getGetPartnersQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Pencil, Trash2, MapPin, Globe, X } from "lucide-react";
+import AdminLayout from "@/components/admin-layout";
+
+const COUNTRY_FLAGS: Record<string, string> = {
+  España: "🇪🇸", Turquía: "🇹🇷", Letonia: "🇱🇻",
+  Rumanía: "🇷🇴", Portugal: "🇵🇹", Macedonia: "🇲🇰",
+};
+
+const partnerSchema = z.object({
+  name: z.string().min(1, "Nombre requerido"),
+  oid: z.string().optional().nullable(),
+  country: z.string().min(1, "País requerido"),
+  city: z.string().min(1, "Ciudad requerida"),
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+  webUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  logoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  socialInstagram: z.string().optional().nullable(),
+  socialTwitter: z.string().optional().nullable(),
+  isCoordinator: z.boolean().default(false),
+});
+type PartnerForm = z.infer<typeof partnerSchema>;
+
+function PartnerModal({ partner, onClose }: { partner?: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const create = useCreatePartner({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }); onClose(); } } });
+  const update = useUpdatePartner({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }); onClose(); } } });
+
+  const form = useForm<PartnerForm>({
+    resolver: zodResolver(partnerSchema),
+    defaultValues: partner ? { ...partner } : { isCoordinator: false },
+  });
+
+  const onSubmit = (data: PartnerForm) => {
+    const payload = { ...data, webUrl: data.webUrl || null, logoUrl: data.logoUrl || null, oid: data.oid || null };
+    if (partner) {
+      update.mutate({ id: partner.id, data: payload });
+    } else {
+      create.mutate({ data: payload });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900">{partner ? "Editar socio" : "Nuevo socio"}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
+        </div>
+
+        <form onSubmit={form.handleSubmit(onSubmit)} className="p-5 space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-700 mb-1">Nombre del centro *</label>
+              <input {...form.register("name")} data-testid="input-partner-name" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.name && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.name.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">País *</label>
+              <input {...form.register("country")} data-testid="input-partner-country" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.country && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.country.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Ciudad *</label>
+              <input {...form.register("city")} data-testid="input-partner-city" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.city && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.city.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Latitud *</label>
+              <input {...form.register("lat")} type="number" step="any" data-testid="input-partner-lat" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.lat && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.lat.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Longitud *</label>
+              <input {...form.register("lng")} type="number" step="any" data-testid="input-partner-lng" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.lng && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.lng.message}</p>}
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">OID</label>
+              <input {...form.register("oid")} data-testid="input-partner-oid" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Web URL</label>
+              <input {...form.register("webUrl")} type="url" data-testid="input-partner-web" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+              {form.formState.errors.webUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.webUrl.message}</p>}
+            </div>
+
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-700 mb-1">Logo URL</label>
+              <input {...form.register("logoUrl")} type="url" data-testid="input-partner-logo" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+            </div>
+
+            <div className="col-span-2 flex items-center gap-2">
+              <input {...form.register("isCoordinator")} type="checkbox" id="isCoordinator" data-testid="input-partner-coordinator" className="rounded" />
+              <label htmlFor="isCoordinator" className="text-sm text-slate-700">Este centro es el coordinador del proyecto</label>
+            </div>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+            <button
+              type="submit"
+              disabled={create.isPending || update.isPending}
+              data-testid="button-save-partner"
+              className="flex-1 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+              style={{ background: "#003399" }}
+            >
+              {(create.isPending || update.isPending) ? "Guardando..." : "Guardar"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminPartners() {
+  const { data: partners = [], isLoading } = useGetPartners();
+  const qc = useQueryClient();
+  const deletePartner = useDeletePartner({ mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getGetPartnersQueryKey() }) } });
+  const [modal, setModal] = useState<"create" | number | null>(null);
+
+  return (
+    <AdminLayout>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Socios</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{partners.length} centros asociados</p>
+        </div>
+        <button
+          onClick={() => setModal("create")}
+          data-testid="button-create-partner"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white"
+          style={{ background: "#003399" }}
+        >
+          <Plus size={16} /> Nuevo socio
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-16 bg-white rounded-xl border border-slate-100 animate-pulse" />)}
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-100">
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3">Centro</th>
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">País</th>
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden lg:table-cell">Coordenadas</th>
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">Tipo</th>
+                <th className="px-5 py-3 w-24" />
+              </tr>
+            </thead>
+            <tbody>
+              {partners.map((p) => (
+                <tr key={p.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50" data-testid={`partner-row-${p.id}`}>
+                  <td className="px-5 py-3">
+                    <div className="font-medium text-slate-900 text-sm">{p.name}</div>
+                    <div className="text-xs text-slate-400">{p.city}</div>
+                  </td>
+                  <td className="px-5 py-3 hidden md:table-cell">
+                    <div className="flex items-center gap-1.5 text-sm text-slate-600">
+                      <span>{COUNTRY_FLAGS[p.country] || "🌍"}</span>
+                      {p.country}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 hidden lg:table-cell">
+                    <div className="flex items-center gap-1 text-xs text-slate-400">
+                      <MapPin size={12} /> {p.lat.toFixed(4)}, {p.lng.toFixed(4)}
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 hidden md:table-cell">
+                    {p.isCoordinator ? (
+                      <span className="text-xs bg-[#003399]/10 text-[#003399] px-2 py-0.5 rounded-full">Coordinador</span>
+                    ) : (
+                      <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Socio</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-2 justify-end">
+                      <button onClick={() => setModal(p.id)} data-testid={`button-edit-partner-${p.id}`} className="p-1.5 text-slate-400 hover:text-[#003399] rounded-lg hover:bg-[#003399]/10 transition-colors">
+                        <Pencil size={14} />
+                      </button>
+                      <button onClick={() => { if (confirm("¿Eliminar este socio?")) deletePartner.mutate({ id: p.id }); }} data-testid={`button-delete-partner-${p.id}`} className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors">
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {partners.length === 0 && (
+            <div className="text-center py-12 text-slate-400">
+              <Globe size={32} className="mx-auto mb-2 opacity-40" />
+              <p className="text-sm">No hay socios aún</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {modal !== null && (
+        <PartnerModal
+          partner={typeof modal === "number" ? partners.find((p) => p.id === modal) : undefined}
+          onClose={() => setModal(null)}
+        />
+      )}
+    </AdminLayout>
+  );
+}
