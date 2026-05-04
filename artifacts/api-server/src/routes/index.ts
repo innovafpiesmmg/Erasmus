@@ -17,14 +17,14 @@ router.use(healthRouter);
 router.use(authRouter);
 
 // Guard: require auth for all write operations and admin-only reads
-router.use((req, res, next) => {
+router.use(async (req, res, next) => {
   const isAuthPath =
     req.path.startsWith("/admin/login") ||
     req.path.startsWith("/admin/logout") ||
     req.path.startsWith("/admin/me");
   const isDashboardPath = req.path.startsWith("/dashboard");
   if (!isAuthPath && (WRITE_METHODS.has(req.method) || isDashboardPath)) {
-    requireAdmin(req, res, next);
+    return requireAdmin(req, res, next);
   } else {
     next();
   }

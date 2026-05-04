@@ -1,13 +1,13 @@
 import type { Request, Response, NextFunction } from "express";
-import { SESSION_STORE } from "../routes/auth.js";
+import { getSession } from "../routes/auth.js";
 
-export function requireAdmin(
+export async function requireAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
-): void {
+): Promise<void> {
   const sessionId = req.cookies["sessionId"];
-  const session = sessionId ? SESSION_STORE.get(sessionId) : null;
+  const session = sessionId ? await getSession(sessionId) : null;
 
   if (!session?.authenticated) {
     res.status(401).json({ error: "Not authenticated" });
