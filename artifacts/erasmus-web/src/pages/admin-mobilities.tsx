@@ -1,6 +1,6 @@
 import {
   useGetMobilities, useCreateMobility, useUpdateMobility, useDeleteMobility,
-  useGetPartners, getGetMobilitiesQueryKey,
+  useGetPartners, useGetActivities, getGetMobilitiesQueryKey,
 } from "@workspace/api-client-react";
 import type { MobilityWithPartner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,7 +28,7 @@ function formatDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
 }
 
-function MobilityModal({ mobility, onClose }: { mobility?: MobilityWithPartner; onClose: () => void }) {
+function MobilityModal({ mobility, activityCount = 0, onClose }: { mobility?: MobilityWithPartner; activityCount?: number; onClose: () => void }) {
   const qc = useQueryClient();
   const { data: partners = [] } = useGetPartners();
   const create = useCreateMobility({ mutation: { onSuccess: () => { qc.invalidateQueries({ queryKey: getGetMobilitiesQueryKey() }); onClose(); } } });
@@ -105,6 +105,15 @@ function MobilityModal({ mobility, onClose }: { mobility?: MobilityWithPartner; 
             <input {...form.register("headerImageUrl")} type="url" data-testid="input-header-image" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
           </div>
 
+          {mobility && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg border border-slate-100" data-testid="modal-activity-count">
+              <span className="text-xs text-slate-500">Actividades vinculadas:</span>
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${activityCount > 0 ? "bg-[#2D5A27]/10 text-[#2D5A27]" : "bg-slate-100 text-slate-400"}`}>
+                {activityCount}
+              </span>
+            </div>
+          )}
+
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button
@@ -125,9 +134,15 @@ function MobilityModal({ mobility, onClose }: { mobility?: MobilityWithPartner; 
 
 export default function AdminMobilities() {
   const { data: mobilities = [], isLoading } = useGetMobilities();
+  const { data: activities = [] } = useGetActivities();
   const qc = useQueryClient();
   const deleteMobility = useDeleteMobility({ mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getGetMobilitiesQueryKey() }) } });
   const [modal, setModal] = useState<"create" | number | null>(null);
+
+  const activityCountByMobility = activities.reduce<Record<number, number>>((acc, a) => {
+    if (a.mobilityId != null) acc[a.mobilityId] = (acc[a.mobilityId] ?? 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <AdminLayout>
@@ -151,6 +166,7 @@ export default function AdminMobilities() {
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3">Centro</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">WP / Tema</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">Fechas</th>
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden lg:table-cell">Actividades</th>
                 <th className="px-5 py-3 w-24" />
               </tr>
             </thead>
@@ -175,6 +191,11 @@ export default function AdminMobilities() {
                         {isPast ? "Completada" : "Próxima"}
                       </span>
                     </td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${(activityCountByMobility[m.id] ?? 0) > 0 ? "bg-[#2D5A27]/10 text-[#2D5A27]" : "bg-slate-100 text-slate-400"}`} data-testid={`activity-count-${m.id}`}>
+                        {activityCountByMobility[m.id] ?? 0} actividades
+                      </span>
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-2 justify-end">
                         <button onClick={() => setModal(m.id)} data-testid={`button-edit-mobility-${m.id}`} className="p-1.5 text-slate-400 hover:text-[#003399] rounded-lg hover:bg-[#003399]/10 transition-colors">
@@ -197,6 +218,7 @@ export default function AdminMobilities() {
       {modal !== null && (
         <MobilityModal
           mobility={typeof modal === "number" ? mobilities.find((m) => m.id === modal) : undefined}
+          activityCount={typeof modal === "number" ? (activityCountByMobility[modal] ?? 0) : 0}
           onClose={() => setModal(null)}
         />
       )}

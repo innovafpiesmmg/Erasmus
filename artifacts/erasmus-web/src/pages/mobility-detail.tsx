@@ -1,8 +1,9 @@
 import { useParams, Link } from "wouter";
 import { useGetMobility, useGetMedia } from "@workspace/api-client-react";
-import type { Activity, Partner } from "@workspace/api-client-react";
+import type { Activity, Media, Partner } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star } from "lucide-react";
+import { useState } from "react";
 import PublicHeader from "@/components/public-header";
 
 const WP_COLORS: Record<string, string> = {
@@ -29,6 +30,104 @@ function formatDate(d: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+function LightboxModal({ images, initialIndex, onClose }: { images: Media[]; initialIndex: number; onClose: () => void }) {
+  const [current, setCurrent] = useState(initialIndex);
+
+  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
+  const next = () => setCurrent((c) => (c + 1) % images.length);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+      onClick={onClose}
+      data-testid="lightbox-overlay"
+    >
+      <button
+        className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl leading-none"
+        onClick={onClose}
+        data-testid="lightbox-close"
+      >
+        ×
+      </button>
+
+      {images.length > 1 && (
+        <>
+          <button
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 rounded-full w-10 h-10 flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); prev(); }}
+            data-testid="lightbox-prev"
+          >
+            ‹
+          </button>
+          <button
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 rounded-full w-10 h-10 flex items-center justify-center"
+            onClick={(e) => { e.stopPropagation(); next(); }}
+            data-testid="lightbox-next"
+          >
+            ›
+          </button>
+        </>
+      )}
+
+      <div className="max-w-4xl max-h-[80vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
+        <img
+          src={images[current].url}
+          alt={images[current].caption || "Erasmus+"}
+          className="max-h-[70vh] max-w-full object-contain rounded-xl"
+          data-testid="lightbox-image"
+        />
+        {images[current].caption && (
+          <p className="text-white/70 text-sm mt-3 text-center">{images[current].caption}</p>
+        )}
+        {images.length > 1 && (
+          <div className="text-white/40 text-xs mt-2">{current + 1} / {images.length}</div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PhotoGallery({ images }: { images: Media[] }) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  if (!images.length) {
+    return (
+      <div className="text-center py-10 text-slate-400 text-sm" data-testid="no-gallery">
+        <Camera size={32} className="mx-auto mb-2 opacity-30" />
+        No hay fotos disponibles aún
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="photo-gallery">
+        {images.map((img, i) => (
+          <motion.button
+            key={img.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.25 + i * 0.05 }}
+            className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer"
+            onClick={() => setLightboxIndex(i)}
+            data-testid={`gallery-image-${img.id}`}
+          >
+            <img src={img.url} alt={img.caption ?? "Erasmus+"} className="w-full h-full object-cover" loading="lazy" />
+            {img.caption && (
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                <p className="text-white text-xs line-clamp-1">{img.caption}</p>
+              </div>
+            )}
+          </motion.button>
+        ))}
+      </div>
+      {lightboxIndex !== null && (
+        <LightboxModal images={images} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
+      )}
+    </>
+  );
 }
 
 function PartnerCard({ partner, color }: { partner: Partner; color: string }) {
@@ -117,7 +216,7 @@ function PartnerCard({ partner, color }: { partner: Partner; color: string }) {
 function ActivityCard({ activity }: { activity: Activity }) {
   return (
     <Link href={`/actividades/${activity.id}`}>
-      <div className="bg-white rounded-xl border border-slate-100 p-5 hover:border-[#003399]/20 hover:shadow-md transition-all cursor-pointer h-full flex flex-col">
+      <div className="bg-white rounded-xl border border-slate-100 p-5 hover:border-[#003399]/20 hover:shadow-md transition-all cursor-pointer h-full flex flex-col" data-testid={`activity-card-${activity.id}`}>
         {activity.imageUrl && (
           <img
             src={activity.imageUrl}
@@ -141,7 +240,7 @@ export default function MobilityDetail() {
   const params = useParams<{ id: string }>();
   const id = Number(params.id);
 
-  const { data: mobility, isLoading } = useGetMobility(id);
+  const { data: mobility, isLoading, isError } = useGetMobility(id);
   const { data: media = [] } = useGetMedia({ mobilityId: id });
 
   if (isLoading) {
@@ -157,7 +256,7 @@ export default function MobilityDetail() {
     );
   }
 
-  if (!mobility) {
+  if (isError || !mobility) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
         <PublicHeader />
@@ -187,7 +286,7 @@ export default function MobilityDetail() {
               <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-semibold mb-6">
                 {mobility.workPackage} · {flag} {mobility.partner?.country}
               </div>
-              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4">
+              <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-4" data-testid="mobility-title">
                 {mobility.theme}
               </h1>
               <div className="flex flex-wrap gap-5 text-white/75 text-sm mt-2">
@@ -211,6 +310,7 @@ export default function MobilityDetail() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.1 }}
+              data-testid="mobility-description"
             >
               <p className="text-slate-600 leading-relaxed text-lg">{mobility.description}</p>
             </motion.div>
@@ -231,15 +331,22 @@ export default function MobilityDetail() {
           )}
 
           {/* Activities */}
-          {mobility.activities.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <Leaf size={20} className="text-[#2D5A27]" /> Actividades
-              </h2>
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            data-testid="activities-section"
+          >
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Leaf size={20} className="text-[#2D5A27]" /> Actividades
+              <span className="text-base font-normal text-slate-400 ml-1">({mobility.activities?.length ?? 0})</span>
+            </h2>
+            {!mobility.activities?.length ? (
+              <div className="text-center py-10 text-slate-400 text-sm" data-testid="no-activities">
+                <Leaf size={32} className="mx-auto mb-2 opacity-30" />
+                No hay actividades registradas aún
+              </div>
+            ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {mobility.activities.map((a, i) => (
                   <motion.div
@@ -252,47 +359,24 @@ export default function MobilityDetail() {
                   </motion.div>
                 ))}
               </div>
-            </motion.section>
-          )}
+            )}
+          </motion.section>
 
-          {/* Photo gallery */}
-          {media.length > 0 && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 }}
-            >
-              <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <Camera size={20} className="text-[#003399]" /> Galería
-              </h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                {media.map((m, i) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.25 + i * 0.05 }}
-                  >
-                    <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                      <img
-                        src={m.url}
-                        alt={m.caption ?? "Erasmus+"}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {m.caption && (
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                          <p className="text-white text-xs">{m.caption}</p>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </motion.section>
-          )}
+          {/* Photo gallery with lightbox */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            data-testid="gallery-section"
+          >
+            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
+              <Camera size={20} className="text-[#003399]" /> Galería de fotos
+              <span className="text-base font-normal text-slate-400 ml-1">({media.length})</span>
+            </h2>
+            <PhotoGallery images={media} />
+          </motion.section>
 
-          {mobility.activities.length === 0 && media.length === 0 && (
+          {mobility.activities?.length === 0 && media.length === 0 && (
             <div className="text-center py-16 text-slate-400">
               <p className="text-sm">
                 El contenido de esta movilidad se actualizará próximamente.

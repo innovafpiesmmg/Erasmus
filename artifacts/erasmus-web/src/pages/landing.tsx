@@ -295,7 +295,11 @@ function MobilitiesTimeline({ mobilities }: { mobilities: MobilityWithPartner[] 
                   <span className="text-white text-xs font-bold text-center leading-tight">{m.workPackage}</span>
                 </div>
 
-                <Link href={`/movilidades/${m.id}`} className="flex-1">
+                <Link 
+                  href={`/movilidades/${m.id}`} 
+                  className="flex-1 group"
+                  data-testid={`mobility-detail-link-${m.id}`}
+                >
                   <div className={`bg-white rounded-xl border ${isPast ? "border-slate-100" : "border-[#003399]/20"} p-5 shadow-sm hover:shadow-md hover:border-[#003399]/30 transition-all cursor-pointer`}>
                     <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                       <div>
