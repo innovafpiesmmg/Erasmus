@@ -64,8 +64,21 @@ export default function AdminSettings() {
   }, [settings, form]);
 
   const onSubmit = (data: SettingsForm) => {
-    const payload = Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v || null])) as any;
-    update.mutate({ data: payload });
+    update.mutate({
+      data: {
+        siteTitle: data.siteTitle || undefined,
+        projectName: data.projectName || undefined,
+        projectDescription: data.projectDescription || undefined,
+        heroTitle: data.heroTitle || undefined,
+        heroSubtitle: data.heroSubtitle || undefined,
+        email: data.email || undefined,
+        phone: data.phone || null,
+        address: data.address || null,
+        socialInstagram: data.socialInstagram || null,
+        socialTwitter: data.socialTwitter || null,
+        socialFacebook: data.socialFacebook || null,
+      },
+    });
   };
 
   const inputClass = "w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20";

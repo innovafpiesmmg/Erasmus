@@ -1,16 +1,22 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import { AdminLoginBody } from "@workspace/api-zod";
 import crypto from "crypto";
 
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "erasmus2025";
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
+
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD) {
+  throw new Error(
+    "ADMIN_USERNAME and ADMIN_PASSWORD environment variables are required.",
+  );
+}
 
 export type SessionData = { authenticated: boolean; username: string };
 export const SESSION_STORE: Map<string, SessionData> = new Map();
 
 const router: IRouter = Router();
 
-router.post("/admin/login", (req, res) => {
+router.post("/admin/login", (req: Request, res: Response) => {
   const parsed = AdminLoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body" });
@@ -20,15 +26,18 @@ router.post("/admin/login", (req, res) => {
   if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
     const sessionId = crypto.randomUUID();
     SESSION_STORE.set(sessionId, { authenticated: true, username });
-    res.setHeader("Set-Cookie", `sessionId=${sessionId}; Path=/; HttpOnly; SameSite=Lax`);
+    res.setHeader(
+      "Set-Cookie",
+      `sessionId=${sessionId}; Path=/; HttpOnly; SameSite=Lax`,
+    );
     res.json({ authenticated: true, username });
   } else {
     res.status(401).json({ error: "Invalid credentials" });
   }
 });
 
-router.post("/admin/logout", (req: any, res) => {
-  const sessionId = req.cookies?.sessionId;
+router.post("/admin/logout", (req: Request, res: Response) => {
+  const sessionId = req.cookies["sessionId"];
   if (sessionId) {
     SESSION_STORE.delete(sessionId);
   }
@@ -36,8 +45,8 @@ router.post("/admin/logout", (req: any, res) => {
   res.json({ message: "Logged out successfully" });
 });
 
-router.get("/admin/me", (req: any, res) => {
-  const sessionId = req.cookies?.sessionId;
+router.get("/admin/me", (req: Request, res: Response) => {
+  const sessionId = req.cookies["sessionId"];
   const session = sessionId ? SESSION_STORE.get(sessionId) : null;
   if (session?.authenticated) {
     res.json({ authenticated: true, username: session.username });

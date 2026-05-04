@@ -13,16 +13,16 @@ const router: IRouter = Router();
 
 router.get("/mobilities", async (_req, res) => {
   try {
-    const mobilities = await db.select().from(mobilitiesTable).orderBy(mobilitiesTable.startDate);
-    const partnerIds = [...new Set(mobilities.map((m) => m.partnerId))];
-    const partners = partnerIds.length
-      ? await db.select().from(partnersTable).where(
-          eq(partnersTable.id, partnerIds[0])
-        )
-      : [];
+    const mobilities = await db
+      .select()
+      .from(mobilitiesTable)
+      .orderBy(mobilitiesTable.startDate);
     const allPartners = await db.select().from(partnersTable);
     const partnerMap = Object.fromEntries(allPartners.map((p) => [p.id, p]));
-    const result = mobilities.map((m) => ({ ...m, partner: partnerMap[m.partnerId] }));
+    const result = mobilities.map((m) => ({
+      ...m,
+      partner: partnerMap[m.partnerId],
+    }));
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch mobilities" });
