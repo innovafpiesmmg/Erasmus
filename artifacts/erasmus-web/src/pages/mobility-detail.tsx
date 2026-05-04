@@ -1,8 +1,8 @@
 import { useParams, Link } from "wouter";
 import { useGetMobility, useGetMedia } from "@workspace/api-client-react";
-import type { Activity } from "@workspace/api-client-react";
+import type { Activity, Partner } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Camera, Leaf, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star } from "lucide-react";
 import PublicHeader from "@/components/public-header";
 
 const WP_COLORS: Record<string, string> = {
@@ -29,6 +29,89 @@ function formatDate(d: string) {
     month: "long",
     year: "numeric",
   });
+}
+
+function PartnerCard({ partner, color }: { partner: Partner; color: string }) {
+  const flag = COUNTRY_FLAGS[partner.country] ?? "🌍";
+  return (
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+      <div className="h-1.5" style={{ background: color }} />
+      <div className="p-6">
+        <div className="flex items-start gap-5">
+          {partner.logoUrl ? (
+            <img
+              src={partner.logoUrl}
+              alt={partner.name}
+              className="w-20 h-20 rounded-xl object-contain border border-slate-100 bg-white flex-shrink-0 p-1"
+            />
+          ) : (
+            <div
+              className="w-20 h-20 rounded-xl flex items-center justify-center text-white text-2xl font-bold flex-shrink-0"
+              style={{ background: `${color}18`, color }}
+            >
+              {partner.name.charAt(0)}
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              {partner.isCoordinator && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                  <Star size={9} fill="currentColor" /> Coordinador
+                </span>
+              )}
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 leading-snug">{partner.name}</h3>
+            <p className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+              <MapPin size={13} />
+              {flag} {partner.city}, {partner.country}
+            </p>
+            {partner.oid && (
+              <p className="text-xs text-slate-400 mt-1 font-mono">OID: {partner.oid}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap gap-3">
+          {partner.webUrl && (
+            <a
+              href={partner.webUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold text-white transition-all hover:opacity-90 hover:shadow-md"
+              style={{ background: color }}
+            >
+              <Globe size={14} />
+              Visitar web del centro
+              <ExternalLink size={12} />
+            </a>
+          )}
+          {partner.socialInstagram && (
+            <a
+              href={`https://instagram.com/${partner.socialInstagram.replace(/^@/, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+            >
+              <Instagram size={14} />
+              {partner.socialInstagram}
+            </a>
+          )}
+          {partner.socialTwitter && (
+            <a
+              href={`https://x.com/${partner.socialTwitter.replace(/^@/, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+            >
+              <Twitter size={14} />
+              {partner.socialTwitter}
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function ActivityCard({ activity }: { activity: Activity }) {
@@ -94,6 +177,7 @@ export default function MobilityDetail() {
       <PublicHeader backTo="/" backLabel="Movilidades" />
 
       <div className="pt-14">
+        {/* Hero banner */}
         <div
           className="text-white py-16"
           style={{ background: `linear-gradient(135deg, ${color} 0%, #001a6e 100%)` }}
@@ -121,17 +205,37 @@ export default function MobilityDetail() {
         </div>
 
         <div className="max-w-4xl mx-auto px-6 py-12 space-y-14">
+          {/* Description */}
           {mobility.description && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
               <p className="text-slate-600 leading-relaxed text-lg">{mobility.description}</p>
             </motion.div>
           )}
 
-          {mobility.activities.length > 0 && (
+          {/* Host center / partner card */}
+          {mobility.partner && (
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 }}
+            >
+              <h2 className="text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <Globe size={20} style={{ color }} /> Centro de acogida
+              </h2>
+              <PartnerCard partner={mobility.partner as Partner} color={color} />
+            </motion.section>
+          )}
+
+          {/* Activities */}
+          {mobility.activities.length > 0 && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
             >
               <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Leaf size={20} className="text-[#2D5A27]" /> Actividades
@@ -142,7 +246,7 @@ export default function MobilityDetail() {
                     key={a.id}
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.15 + i * 0.07 }}
+                    transition={{ delay: 0.2 + i * 0.07 }}
                   >
                     <ActivityCard activity={a} />
                   </motion.div>
@@ -151,11 +255,12 @@ export default function MobilityDetail() {
             </motion.section>
           )}
 
+          {/* Photo gallery */}
           {media.length > 0 && (
             <motion.section
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.25 }}
             >
               <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
                 <Camera size={20} className="text-[#003399]" /> Galería
@@ -166,7 +271,7 @@ export default function MobilityDetail() {
                     key={m.id}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.2 + i * 0.05 }}
+                    transition={{ delay: 0.25 + i * 0.05 }}
                   >
                     <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-shadow">
                       <img
