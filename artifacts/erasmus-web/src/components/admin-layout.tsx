@@ -42,7 +42,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-slate-100">
         <div className="flex items-center gap-3">
-          <img src="/logo-ies.jpg" alt="IES MMG" className="h-8 w-auto object-contain rounded" />
+          <img src="/logo-ies.png" alt="IES MMG" className="h-8 w-auto object-contain" />
           <div>
             <div className="font-bold text-slate-900 text-xs leading-tight">IES MMG</div>
             <div className="text-xs text-slate-400">Erasmus+ SEA</div>

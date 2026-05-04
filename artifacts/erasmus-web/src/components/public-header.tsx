@@ -31,7 +31,7 @@ export default function PublicHeader({
           {backLabel}
         </Link>
         <div className="flex items-center gap-3">
-          <img src="/logo-ies.jpg" alt="IES MMG" className="h-8 w-auto object-contain" />
+          <img src="/logo-ies.png" alt="IES MMG" className="h-8 w-auto object-contain" />
           <div className="w-px h-5 bg-slate-200" />
           <img src="/logo-erasmus.png" alt="Erasmus+" className="h-8 w-auto object-contain" />
         </div>

@@ -475,7 +475,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
       <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img
-            src={scrolled ? "/logo-ies.jpg" : "/logo-ies-nobg.png"}
+            src={scrolled ? "/logo-ies.png" : "/logo-ies-nobg.png"}
             alt="IES Manuel Martín González"
             className="h-9 w-auto object-contain"
             style={scrolled ? {} : { filter: "brightness(0) invert(1)" }}
