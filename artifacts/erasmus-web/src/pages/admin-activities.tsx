@@ -30,7 +30,12 @@ function ActivityModal({ activity, onClose }: { activity?: any; onClose: () => v
   });
 
   const onSubmit = (data: ActivityForm) => {
-    const payload = { ...data, imageUrl: data.imageUrl || null, mobilityId: data.mobilityId || null };
+    const payload = {
+      title: data.title,
+      description: data.description || "",
+      imageUrl: data.imageUrl || null,
+      mobilityId: data.mobilityId || null,
+    };
     if (activity) {
       update.mutate({ id: activity.id, data: payload });
     } else {

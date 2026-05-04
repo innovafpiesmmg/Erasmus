@@ -14,7 +14,7 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { data: me, isLoading, isError } = useGetAdminMe({ query: { retry: false } });
+  const { data: me, isLoading, isError } = useGetAdminMe({ query: { retry: false, queryKey: getGetAdminMeQueryKey() } });
   const queryClient = useQueryClient();
   const logout = useAdminLogout({
     mutation: {

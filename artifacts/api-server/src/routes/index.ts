@@ -7,11 +7,28 @@ import mobilitiesRouter from "./mobilities";
 import activitiesRouter from "./activities";
 import mediaRouter from "./media";
 import dashboardRouter from "./dashboard";
+import { requireAdmin } from "../middleware/require-admin.js";
+
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(authRouter);
+
+// Guard: require auth for all write operations (auth routes exempt)
+router.use((req, res, next) => {
+  const isAuthPath =
+    req.path.startsWith("/admin/login") ||
+    req.path.startsWith("/admin/logout") ||
+    req.path.startsWith("/admin/me");
+  if (WRITE_METHODS.has(req.method) && !isAuthPath) {
+    requireAdmin(req, res, next);
+  } else {
+    next();
+  }
+});
+
 router.use(settingsRouter);
 router.use(partnersRouter);
 router.use(mobilitiesRouter);

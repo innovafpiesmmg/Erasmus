@@ -101,10 +101,10 @@ function HeroSection({ settings }: { settings: any }) {
   );
 }
 
-function StatsBar({ partners, mobilities }: { partners: any[]; mobilities: any[] }) {
+function StatsBar({ partners, mobilities }: { partners: any[]; mobilities: any[] | undefined }) {
   const stats = [
     { label: "Países participantes", value: partners.length || 6, icon: Globe },
-    { label: "Movilidades planificadas", value: mobilities.length || 6, icon: Calendar },
+    { label: "Movilidades planificadas", value: mobilities?.length ?? 6, icon: Calendar },
     { label: "Años de proyecto", value: "2024–2027", icon: Leaf },
     { label: "Programa", value: "Erasmus+ SEA", icon: Users },
   ];
@@ -132,15 +132,19 @@ function StatsBar({ partners, mobilities }: { partners: any[]; mobilities: any[]
   );
 }
 
-function PartnersMap({ partners }: { partners: any[] }) {
+function PartnersMap({ partners, mobilities }: { partners: any[]; mobilities: any[] | undefined }) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current || !partners.length) return;
+    if (!mapRef.current || mapInstanceRef.current || !partners.length || mobilities === undefined) return;
+
+    let cancelled = false;
 
     import("leaflet").then((L) => {
-      const map = L.map(mapRef.current!, {
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+
+      const map = L.map(mapRef.current, {
         center: [50, 15],
         zoom: 4,
         scrollWheelZoom: false,
@@ -151,6 +155,18 @@ function PartnersMap({ partners }: { partners: any[] }) {
       }).addTo(map);
 
       partners.forEach((p) => {
+        const partnerMobilities = mobilities.filter((m: any) => m.partnerId === p.id);
+        const mobilityRows = partnerMobilities.length
+          ? partnerMobilities.map((m: any) => {
+              const wpColor = WP_COLORS[m.workPackage] || "#003399";
+              return `<div style="display:flex;align-items:center;gap:6px;margin-top:4px">
+                <span style="background:${wpColor};color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;white-space:nowrap">${m.workPackage}</span>
+                <span style="color:#444;font-size:11px">${m.theme}</span>
+              </div>
+              <div style="color:#888;font-size:10px;margin-left:2px">${formatDate(m.startDate)} – ${formatDate(m.endDate)}</div>`;
+            }).join("")
+          : "";
+
         const marker = L.circleMarker([p.lat, p.lng], {
           radius: p.isCoordinator ? 12 : 9,
           fillColor: p.isCoordinator ? "#003399" : "#2D5A27",
@@ -161,10 +177,11 @@ function PartnersMap({ partners }: { partners: any[] }) {
         }).addTo(map);
 
         marker.bindPopup(`
-          <div style="min-width:180px;font-family:system-ui">
-            <div style="font-weight:700;color:#003399;font-size:14px;margin-bottom:4px">${p.name}</div>
+          <div style="min-width:200px;font-family:system-ui;max-width:240px">
+            <div style="font-weight:700;color:#003399;font-size:14px;margin-bottom:2px">${p.name}</div>
             <div style="color:#666;font-size:12px;margin-bottom:6px">${p.city}, ${p.country} ${COUNTRY_FLAGS[p.country] || ""}</div>
-            ${p.isCoordinator ? '<span style="background:#003399;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px">Coordinador</span>' : ""}
+            ${p.isCoordinator ? '<div style="margin-bottom:6px"><span style="background:#003399;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px">Coordinador</span></div>' : ""}
+            ${mobilityRows ? `<div style="border-top:1px solid #eee;padding-top:6px;margin-top:2px">${mobilityRows}</div>` : ""}
           </div>
         `);
       });
@@ -173,12 +190,13 @@ function PartnersMap({ partners }: { partners: any[] }) {
     });
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, [partners]);
+  }, [partners, mobilities]);
 
   return (
     <section id="socios" className="py-20 bg-slate-50">
@@ -227,7 +245,7 @@ function PartnersMap({ partners }: { partners: any[] }) {
   );
 }
 
-function MobilitiesTimeline({ mobilities }: { mobilities: any[] }) {
+function MobilitiesTimeline({ mobilities }: { mobilities: any[] | undefined }) {
   return (
     <section id="movilidades" className="py-20 bg-white">
       <div className="max-w-5xl mx-auto px-6">
@@ -245,7 +263,7 @@ function MobilitiesTimeline({ mobilities }: { mobilities: any[] }) {
         <div className="relative">
           <div className="absolute left-8 top-0 bottom-0 w-0.5 bg-slate-200" />
 
-          {mobilities.map((m, i) => {
+          {(mobilities ?? []).map((m, i) => {
             const isPast = new Date(m.startDate) < new Date();
             const color = WP_COLORS[m.workPackage] || "#003399";
             return (
@@ -441,7 +459,7 @@ function Navbar({ settings }: { settings: any }) {
 
 export default function LandingPage() {
   const { data: partners = [] } = useGetPartners();
-  const { data: mobilities = [] } = useGetMobilities();
+  const { data: mobilities } = useGetMobilities();
   const { data: settings } = useGetSettings();
   const { data: activities = [] } = useGetActivities();
   const { data: media = [] } = useGetMedia();
@@ -451,7 +469,7 @@ export default function LandingPage() {
       <Navbar settings={settings} />
       <HeroSection settings={settings} />
       <StatsBar partners={partners} mobilities={mobilities} />
-      <PartnersMap partners={partners} />
+      <PartnersMap partners={partners} mobilities={mobilities} />
       <MobilitiesTimeline mobilities={mobilities} />
       <GallerySection media={media} />
       <ActivitiesSection activities={activities} />

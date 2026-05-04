@@ -5,7 +5,8 @@ import crypto from "crypto";
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || "admin";
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "erasmus2025";
 
-const SESSION_STORE: Map<string, { authenticated: boolean; username: string }> = new Map();
+export type SessionData = { authenticated: boolean; username: string };
+export const SESSION_STORE: Map<string, SessionData> = new Map();
 
 const router: IRouter = Router();
 
