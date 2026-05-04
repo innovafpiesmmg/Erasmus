@@ -2,9 +2,95 @@ import { useParams, Link } from "wouter";
 import { useGetMobility, useGetMedia } from "@workspace/api-client-react";
 import type { Activity, Media, Partner } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star } from "lucide-react";
-import { useState } from "react";
+import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star, Share2, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
+
+function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
+  useEffect(() => {
+    if (!mobility) return;
+
+    const title = `${mobility.theme} — Erasmus+ Platform`;
+    const description = mobility.description
+      ? mobility.description.slice(0, 160)
+      : `Movilidad Erasmus+ en ${mobility.partner?.name ?? "destino internacional"}`;
+    const image = mobility.headerImageUrl ?? null;
+
+    document.title = title;
+
+    function setMeta(property: string, content: string, attr: "property" | "name" = "property") {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${property}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    }
+
+    function removeMeta(property: string, attr: "property" | "name" = "property") {
+      const el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${property}"]`);
+      el?.remove();
+    }
+
+    setMeta("og:type", "website");
+    setMeta("og:title", title);
+    setMeta("og:description", description);
+    setMeta("og:url", window.location.href);
+    if (image) {
+      setMeta("og:image", image);
+    } else {
+      removeMeta("og:image");
+    }
+
+    setMeta("twitter:card", "summary_large_image", "name");
+    setMeta("twitter:title", title, "name");
+    setMeta("twitter:description", description, "name");
+    if (image) {
+      setMeta("twitter:image", image, "name");
+    } else {
+      removeMeta("twitter:image", "name");
+    }
+
+    return () => {
+      document.title = "Erasmus+ Platform";
+    };
+  }, [mobility]);
+}
+
+function ShareButton() {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url, title: document.title });
+      } catch {
+        // user cancelled or share not available — fall through to clipboard
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // clipboard access denied — silently ignore
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShare}
+      data-testid="share-button"
+      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold transition-all"
+    >
+      {copied ? <Check size={15} /> : <Share2 size={15} />}
+      {copied ? "¡Enlace copiado!" : "Compartir"}
+    </button>
+  );
+}
 
 const WP_COLORS: Record<string, string> = {
   WP2: "#003399",
@@ -243,6 +329,8 @@ export default function MobilityDetail() {
   const { data: mobility, isLoading, isError } = useGetMobility(id);
   const { data: media = [] } = useGetMedia({ mobilityId: id });
 
+  useMobilityMeta(mobility);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50">
@@ -298,6 +386,9 @@ export default function MobilityDetail() {
                   <Calendar size={14} />
                   {formatDate(mobility.startDate)} — {formatDate(mobility.endDate)}
                 </span>
+              </div>
+              <div className="mt-6">
+                <ShareButton />
               </div>
             </motion.div>
           </div>
