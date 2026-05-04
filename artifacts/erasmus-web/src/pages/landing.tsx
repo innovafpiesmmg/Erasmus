@@ -30,7 +30,7 @@ function formatDate(dateStr: string) {
 function HeroSection({ settings }: { settings: Settings | undefined }) {
   return (
     <section
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
+      className="relative mt-16 min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center overflow-hidden"
     >
       {/* Hero background photo */}
       <div className="absolute inset-0" style={{ backgroundImage: "url('/hero-erasmus.png')", backgroundSize: "cover", backgroundPosition: "center top" }} />
