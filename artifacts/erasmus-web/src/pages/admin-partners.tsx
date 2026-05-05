@@ -363,6 +363,7 @@ export default function AdminPartners() {
             <thead>
               <tr className="border-b border-slate-100">
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden sm:table-cell w-14">Logo</th>
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell w-16">Foto</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3">Centro</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">País</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden lg:table-cell">Coordenadas</th>
@@ -391,6 +392,27 @@ export default function AdminPartners() {
                     {p.logoUrl && (
                       <div className="w-10 h-10 rounded border border-slate-100 bg-slate-50 items-center justify-center text-slate-300 hidden" data-testid={`partner-logo-error-${p.id}`}>
                         <ImageOff size={16} />
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-5 py-3 hidden md:table-cell w-16">
+                    {p.photoUrl ? (
+                      <img
+                        src={p.photoUrl}
+                        alt={`Foto ${p.name}`}
+                        data-testid={`partner-photo-thumb-${p.id}`}
+                        className="w-10 h-7 object-cover rounded border border-slate-100"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement | null)?.style.setProperty("display", "flex"); }}
+                      />
+                    ) : null}
+                    {!p.photoUrl && (
+                      <div className="w-10 h-7 rounded border border-slate-100 bg-slate-50 flex items-center justify-center text-slate-300" data-testid={`partner-photo-placeholder-${p.id}`}>
+                        <ImageOff size={13} />
+                      </div>
+                    )}
+                    {p.photoUrl && (
+                      <div className="w-10 h-7 rounded border border-slate-100 bg-slate-50 items-center justify-center text-slate-300 hidden" data-testid={`partner-photo-error-${p.id}`}>
+                        <ImageOff size={13} />
                       </div>
                     )}
                   </td>
