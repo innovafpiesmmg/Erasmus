@@ -18,18 +18,27 @@ function getCookieLang(): string | null {
   return m[1];
 }
 
-/** Poll until the hidden GT combo is in the DOM (up to 10 s) */
-function waitForGTCombo(timeoutMs = 10_000): Promise<HTMLSelectElement | null> {
-  return new Promise((resolve) => {
-    const immediate = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-    if (immediate) { resolve(immediate); return; }
+/** Always queries fresh — never caches a stale reference after GT re-renders */
+function getGTCombo(): HTMLSelectElement | null {
+  return document.querySelector<HTMLSelectElement>(".goog-te-combo");
+}
 
+/** Fire a change event the same way GT's own internal code does */
+function fireGTChange(select: HTMLSelectElement) {
+  const evt = document.createEvent("HTMLEvents");
+  evt.initEvent("change", true, true); // bubbles=true, cancelable=true
+  select.dispatchEvent(evt);
+}
+
+/** Poll until .goog-te-combo appears in the DOM (up to timeoutMs) */
+function waitForGTCombo(timeoutMs = 10_000): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (getGTCombo()) { resolve(true); return; }
     const deadline = Date.now() + timeoutMs;
     const id = setInterval(() => {
-      const sel = document.querySelector<HTMLSelectElement>(".goog-te-combo");
-      if (sel || Date.now() > deadline) {
+      if (getGTCombo() || Date.now() > deadline) {
         clearInterval(id);
-        resolve(sel ?? null);
+        resolve(!!getGTCombo());
       }
     }, 200);
   });
@@ -39,49 +48,41 @@ function clearGTCookies() {
   const exp = new Date(0).toUTCString();
   const host = window.location.hostname;
   const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
-  const domains = isIP ? [""] : ["", host, `.${host}`];
-  for (const d of domains) {
+  for (const d of isIP ? [""] : ["", host, `.${host}`]) {
     const dp = d ? `; domain=${d}` : "";
     document.cookie = `googtrans=; expires=${exp}; path=/${dp}`;
   }
 }
 
-async function applyTranslation(code: string) {
-  if (code === "es") {
-    localStorage.removeItem(STORAGE_KEY);
+async function applyTranslation(code: string, attempt = 0) {
+  const targetValue = code === "es" ? "" : code; // "" = "Select Language" (GT restore)
 
-    const select = await waitForGTCombo();
-    if (select) {
-      // Setting to "" triggers GT's built-in "restore original" path
-      select.value = "";
-      select.dispatchEvent(new Event("change"));
-      // Also wipe the cookie so a future reload starts clean
-      clearGTCookies();
-    } else {
-      // Widget never loaded — clear cookies and hard reload
-      clearGTCookies();
-      window.location.reload();
+  if (code === "es") {
+    clearGTCookies();
+    localStorage.removeItem(STORAGE_KEY);
+  } else {
+    localStorage.setItem(STORAGE_KEY, code);
+  }
+
+  const ready = await waitForGTCombo(10_000);
+  if (!ready) {
+    // Widget never loaded — reload page as last resort
+    window.location.reload();
+    return;
+  }
+
+  const select = getGTCombo();
+  if (!select) {
+    // Combo disappeared between check and use — retry up to 3 times
+    if (attempt < 3) {
+      await new Promise((r) => setTimeout(r, 300));
+      return applyTranslation(code, attempt + 1);
     }
     return;
   }
 
-  localStorage.setItem(STORAGE_KEY, code);
-
-  const select = await waitForGTCombo();
-  if (select) {
-    select.value = code;
-    select.dispatchEvent(new Event("change"));
-  } else {
-    // Fallback: set cookie + reload (autoDisplay:false won't fire, but at least
-    // state is persisted for the next full page load if the user refreshes)
-    const host = window.location.hostname;
-    const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
-    document.cookie = `googtrans=/es/${code}; path=/`;
-    if (!isIP) {
-      document.cookie = `googtrans=/es/${code}; path=/; domain=.${host}`;
-    }
-    window.location.reload();
-  }
+  select.value = targetValue;
+  fireGTChange(select);
 }
 
 export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
@@ -89,22 +90,14 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
   const [current, setCurrent] = useState("es");
   const ref = useRef<HTMLDivElement>(null);
 
+  // Read active language once on mount
   useEffect(() => {
     const cookieLang = getCookieLang();
     const stored = localStorage.getItem(STORAGE_KEY);
     setCurrent(cookieLang ?? stored ?? "es");
   }, []);
 
-  // Re-apply translation after SPA navigation (React re-renders new DOM nodes)
-  useEffect(() => {
-    if (current === "es") return;
-    waitForGTCombo().then((select) => {
-      if (!select || select.value === current) return;
-      select.value = current;
-      select.dispatchEvent(new Event("change"));
-    });
-  }, [current]);
-
+  // Close dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
