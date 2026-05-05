@@ -131,9 +131,9 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
 
   const { data: partners = [] } = useGetPartners();
 
-  // Languages = Spanish (always) + one per partner country we know
+  // Languages = Spanish + English (always) + one per partner country we know
   const languages = useMemo(() => {
-    const codes = new Set<string>(["es"]);
+    const codes = new Set<string>(["es", "en"]);
     for (const p of partners) {
       const code = countryToLang(p.country);
       if (code && LANG_META[code]) codes.add(code);

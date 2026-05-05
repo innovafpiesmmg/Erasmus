@@ -1,10 +1,10 @@
 import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useRef, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Save, Settings } from "lucide-react";
+import { Save, Settings, Upload, X } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const settingsSchema = z.object({
@@ -13,6 +13,7 @@ const settingsSchema = z.object({
   projectDescription: z.string().optional().nullable(),
   heroTitle: z.string().optional().nullable(),
   heroSubtitle: z.string().optional().nullable(),
+  heroImageUrl: z.string().optional().nullable().or(z.literal("")),
   email: z.string().email("Email inválido").optional().nullable().or(z.literal("")),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
@@ -47,6 +48,11 @@ export default function AdminSettings() {
 
   const form = useForm<SettingsForm>({ resolver: zodResolver(settingsSchema) });
 
+  const heroImageUrlValue = useWatch({ control: form.control, name: "heroImageUrl" });
+  const [heroUploading, setHeroUploading] = useState(false);
+  const [heroUploadError, setHeroUploadError] = useState<string | null>(null);
+  const heroFileInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (settings) {
       form.reset({
@@ -55,6 +61,7 @@ export default function AdminSettings() {
         projectDescription: settings.projectDescription || "",
         heroTitle: settings.heroTitle || "",
         heroSubtitle: settings.heroSubtitle || "",
+        heroImageUrl: settings.heroImageUrl || "",
         email: settings.email || "",
         phone: settings.phone || "",
         address: settings.address || "",
@@ -67,6 +74,29 @@ export default function AdminSettings() {
     }
   }, [settings, form]);
 
+  const handleHeroFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setHeroUploadError(null);
+    setHeroUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al subir el archivo");
+      }
+      const { url } = await res.json() as { url: string };
+      form.setValue("heroImageUrl", url, { shouldValidate: true, shouldDirty: true });
+    } catch (err: unknown) {
+      setHeroUploadError(err instanceof Error ? err.message : "Error al subir el archivo");
+    } finally {
+      setHeroUploading(false);
+      if (heroFileInputRef.current) heroFileInputRef.current.value = "";
+    }
+  };
+
   const onSubmit = (data: SettingsForm) => {
     update.mutate({
       data: {
@@ -75,6 +105,7 @@ export default function AdminSettings() {
         projectDescription: data.projectDescription || undefined,
         heroTitle: data.heroTitle || undefined,
         heroSubtitle: data.heroSubtitle || undefined,
+        heroImageUrl: data.heroImageUrl || null,
         email: data.email || undefined,
         phone: data.phone || null,
         address: data.address || null,
@@ -145,6 +176,76 @@ export default function AdminSettings() {
 
             <FormField label="Subtítulo">
               <input {...form.register("heroSubtitle")} data-testid="input-hero-subtitle" className={inputClass} />
+            </FormField>
+
+            <FormField label="Imagen de portada" error={form.formState.errors.heroImageUrl?.message}>
+              <div className="flex gap-2">
+                <input
+                  {...form.register("heroImageUrl")}
+                  type="text"
+                  data-testid="input-hero-image-url"
+                  className={`flex-1 ${inputClass}`}
+                  placeholder="https://... o /uploads/..."
+                />
+                <button
+                  type="button"
+                  onClick={() => heroFileInputRef.current?.click()}
+                  disabled={heroUploading}
+                  data-testid="button-upload-hero-image"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 whitespace-nowrap"
+                >
+                  <Upload size={14} />
+                  {heroUploading ? "Subiendo..." : "Subir archivo"}
+                </button>
+                <input
+                  ref={heroFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  data-testid="input-hero-image-file"
+                  onChange={handleHeroFileChange}
+                />
+              </div>
+              {heroUploadError && <p className="text-red-500 text-xs mt-1">{heroUploadError}</p>}
+              <p className="text-xs text-slate-400 mt-1">
+                Si se deja en blanco se usa la imagen por defecto del proyecto.
+              </p>
+              {heroImageUrlValue ? (
+                <div className="mt-2 flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <img
+                    src={heroImageUrlValue}
+                    alt="Vista previa de portada"
+                    className="w-24 h-14 object-cover rounded border border-slate-200"
+                    data-testid="hero-image-preview"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-slate-500 truncate">{heroImageUrlValue}</p>
+                    <p className="text-xs text-[#003399] mt-0.5">Vista previa de la portada</p>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="button-remove-hero-image"
+                    onClick={() => {
+                      form.setValue("heroImageUrl", "", { shouldValidate: true, shouldDirty: true });
+                      if (heroFileInputRef.current) heroFileInputRef.current.value = "";
+                    }}
+                    title="Usar imagen por defecto"
+                    className="flex-shrink-0 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-2 flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <img
+                    src="/hero-erasmus.png"
+                    alt="Portada por defecto"
+                    className="w-24 h-14 object-cover rounded border border-slate-200"
+                  />
+                  <p className="text-xs text-slate-500">Usando la imagen de portada por defecto.</p>
+                </div>
+              )}
             </FormField>
           </div>
         </div>

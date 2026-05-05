@@ -56,6 +56,8 @@ export interface Settings {
   projectEndYear?: string | null;
   heroTitle: string;
   heroSubtitle: string;
+  /** @nullable */
+  heroImageUrl?: string | null;
   email: string;
   /** @nullable */
   phone?: string | null;
@@ -80,6 +82,8 @@ export interface UpdateSettingsBody {
   projectEndYear?: string | null;
   heroTitle?: string;
   heroSubtitle?: string;
+  /** @nullable */
+  heroImageUrl?: string | null;
   email?: string;
   /** @nullable */
   phone?: string | null;

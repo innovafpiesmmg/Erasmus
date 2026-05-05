@@ -34,7 +34,7 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
       className="relative mt-16 min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center overflow-hidden"
     >
       {/* Hero background photo */}
-      <div className="absolute inset-0" style={{ backgroundImage: "url('/hero-erasmus.png')", backgroundSize: "cover", backgroundPosition: "center top" }} />
+      <div className="absolute inset-0" style={{ backgroundImage: `url('${settings?.heroImageUrl || "/hero-erasmus.png"}')`, backgroundSize: "cover", backgroundPosition: "center top" }} />
       {/* Overlay: light tint at top, slightly denser at bottom for text readability */}
       <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,20,80,0.30) 0%, rgba(0,10,50,0.55) 70%, rgba(0,10,50,0.70) 100%)" }} />
 

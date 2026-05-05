@@ -9,6 +9,7 @@ export const settingsTable = pgTable("settings", {
   projectDescription: text("project_description").notNull().default("Proyecto Erasmus+ SEA"),
   heroTitle: text("hero_title").notNull().default("Erasmus+ en IES Manuel Martín González"),
   heroSubtitle: text("hero_subtitle").notNull().default("Conectando Europa a través de la educación y la sostenibilidad"),
+  heroImageUrl: text("hero_image_url"),
   email: text("email").notNull().default("info@iesmanuelmartingonzalez.es"),
   phone: text("phone"),
   address: text("address"),

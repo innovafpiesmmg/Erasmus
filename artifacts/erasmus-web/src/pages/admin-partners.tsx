@@ -279,6 +279,21 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
                   )}
                 </div>
               )}
+
+              {photoUrlValue && (
+                <button
+                  type="button"
+                  data-testid="button-remove-photo"
+                  onClick={() => {
+                    form.setValue("photoUrl", "", { shouldValidate: true, shouldDirty: true });
+                    setSelectedPhotoFile(null);
+                    if (photoFileInputRef.current) photoFileInputRef.current.value = "";
+                  }}
+                  className="mt-2 flex items-center gap-1.5 text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded-lg transition-colors"
+                >
+                  <X size={13} /> Eliminar foto
+                </button>
+              )}
             </div>
 
             <div>
