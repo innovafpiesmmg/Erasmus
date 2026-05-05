@@ -15,8 +15,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Translate widget (hidden, driven by LanguageSelector component) -->
+    <script>
+      window.googleTranslateElementInit = function () {
+        new window.google.translate.TranslateElement(
+          { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk', autoDisplay: false },
+          'google_translate_element'
+        );
+      };
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
   </head>
   <body>
+    <!-- Hidden Google Translate anchor — controlled by LanguageSelector -->
+    <div id="google_translate_element" style="display:none;position:absolute;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

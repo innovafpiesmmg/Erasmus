@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
+import LanguageSelector from "@/components/language-selector";
 
 export default function PublicHeader({
   backTo = "/",
@@ -31,6 +32,8 @@ export default function PublicHeader({
           {backLabel}
         </Link>
         <div className="flex items-center gap-3">
+          <LanguageSelector />
+          <div className="w-px h-5 bg-slate-200" />
           <img src="/logo-ies.png" alt="IES MMG" className="h-9 w-auto object-contain" />
           <div className="w-px h-6 bg-slate-200" />
           <img src="/logo-erasmus.png" alt="Erasmus+" className="h-16 w-auto object-contain" />

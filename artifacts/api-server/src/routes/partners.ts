@@ -2,12 +2,16 @@ import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, partnersTable, mobilitiesTable } from "@workspace/db";
 import { CreatePartnerBody, GetPartnerParams, UpdatePartnerParams, DeletePartnerParams, UpdatePartnerBody } from "@workspace/api-zod";
+import { getAdminLocals, getPartnerIdFromRequest } from "../middleware/require-admin.js";
 
 const router: IRouter = Router();
 
-router.get("/partners", async (_req, res) => {
+router.get("/partners", async (req, res) => {
   try {
-    const partners = await db.select().from(partnersTable).orderBy(partnersTable.id);
+    const scopedPartnerId = await getPartnerIdFromRequest(req);
+    const partners = scopedPartnerId != null
+      ? await db.select().from(partnersTable).where(eq(partnersTable.id, scopedPartnerId))
+      : await db.select().from(partnersTable).orderBy(partnersTable.id);
     res.json(partners);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch partners" });
@@ -15,6 +19,11 @@ router.get("/partners", async (_req, res) => {
 });
 
 router.post("/partners", async (req, res) => {
+  const { partnerId: adminPartnerId } = getAdminLocals(res);
+  if (adminPartnerId != null) {
+    res.status(403).json({ error: "No tienes permisos para crear socios" });
+    return;
+  }
   try {
     const parsed = CreatePartnerBody.safeParse(req.body);
     if (!parsed.success) {
@@ -35,6 +44,11 @@ router.get("/partners/:id", async (req, res) => {
       res.status(400).json({ error: "Invalid ID" });
       return;
     }
+    const scopedPartnerId = await getPartnerIdFromRequest(req);
+    if (scopedPartnerId != null && scopedPartnerId !== params.data.id) {
+      res.status(403).json({ error: "No tienes acceso a este socio" });
+      return;
+    }
     const partner = await db.select().from(partnersTable).where(eq(partnersTable.id, params.data.id)).limit(1);
     if (!partner.length) {
       res.status(404).json({ error: "Partner not found" });
@@ -48,8 +62,14 @@ router.get("/partners/:id", async (req, res) => {
 });
 
 router.put("/partners/:id", async (req, res) => {
+  const { partnerId: adminPartnerId } = getAdminLocals(res);
+  const targetId = Number(req.params.id);
+  if (adminPartnerId != null && adminPartnerId !== targetId) {
+    res.status(403).json({ error: "Solo puedes editar tu propio centro" });
+    return;
+  }
   try {
-    const params = UpdatePartnerParams.safeParse({ id: Number(req.params.id) });
+    const params = UpdatePartnerParams.safeParse({ id: targetId });
     const body = UpdatePartnerBody.safeParse(req.body);
     if (!params.success || !body.success) {
       res.status(400).json({ error: "Invalid request" });
@@ -71,6 +91,11 @@ router.put("/partners/:id", async (req, res) => {
 });
 
 router.delete("/partners/:id", async (req, res) => {
+  const { partnerId: adminPartnerId } = getAdminLocals(res);
+  if (adminPartnerId != null) {
+    res.status(403).json({ error: "No tienes permisos para eliminar socios" });
+    return;
+  }
   try {
     const params = DeletePartnerParams.safeParse({ id: Number(req.params.id) });
     if (!params.success) {

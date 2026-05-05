@@ -1,17 +1,26 @@
 import { useGetAdminMe, useAdminLogout, getGetAdminMeQueryKey } from "@workspace/api-client-react";
 import { Link, useLocation, Redirect } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X, HardDriveDownload } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X, HardDriveDownload, UserCog, Building2 } from "lucide-react";
 import { useState } from "react";
 
-const NAV_ITEMS = [
+const FULL_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/socios", label: "Socios", icon: Users },
   { href: "/admin/movilidades", label: "Movilidades", icon: Calendar },
   { href: "/admin/actividades", label: "Actividades", icon: BookOpen },
   { href: "/admin/media", label: "Media", icon: Image },
   { href: "/admin/ajustes", label: "Ajustes", icon: Settings },
+  { href: "/admin/usuarios", label: "Usuarios", icon: UserCog },
   { href: "/admin/backup", label: "Backup", icon: HardDriveDownload },
+];
+
+const PARTNER_NAV_ITEMS = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/admin/socios", label: "Mi centro", icon: Building2 },
+  { href: "/admin/movilidades", label: "Movilidades", icon: Calendar },
+  { href: "/admin/actividades", label: "Actividades", icon: BookOpen },
+  { href: "/admin/media", label: "Media", icon: Image },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,6 +48,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <Redirect to="/admin/login" />;
   }
 
+  const isPartnerAdmin = me.partnerId != null;
+  const NAV_ITEMS = isPartnerAdmin ? PARTNER_NAV_ITEMS : FULL_NAV_ITEMS;
+
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-4 border-b border-slate-100">
@@ -53,6 +65,16 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <img src="/logo-erasmus.png" alt="Erasmus+" className="h-5 w-auto object-contain opacity-70" />
         </div>
       </div>
+
+      {isPartnerAdmin && (
+        <div className="mx-3 mt-3 px-3 py-2 rounded-lg bg-blue-50 border border-blue-100">
+          <div className="flex items-center gap-1.5">
+            <Building2 size={12} className="text-[#003399]" />
+            <span className="text-xs font-semibold text-[#003399]">Acceso de socio</span>
+          </div>
+          <p className="text-xs text-blue-600 mt-0.5 leading-tight">Solo tu centro y actividades</p>
+        </div>
+      )}
 
       <nav className="flex-1 p-3 space-y-0.5">
         {NAV_ITEMS.map((item) => {

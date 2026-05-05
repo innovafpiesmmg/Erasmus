@@ -25,6 +25,8 @@ export interface LoginBody {
 export interface AuthResponse {
   authenticated: boolean;
   username: string;
+  /** @nullable — null means full admin, a number means scoped to that partner */
+  partnerId?: number | null;
 }
 
 export interface UploadMediaBody {

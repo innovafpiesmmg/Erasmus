@@ -8,6 +8,7 @@ import activitiesRouter from "./activities";
 import mediaRouter from "./media";
 import dashboardRouter from "./dashboard";
 import backupRouter from "./backup";
+import adminsRouter from "./admins";
 import { requireAdmin } from "../middleware/require-admin.js";
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -24,7 +25,8 @@ router.use(async (req, res, next) => {
     req.path.startsWith("/admin/logout") ||
     req.path.startsWith("/admin/me");
   const isDashboardPath = req.path.startsWith("/dashboard");
-  if (!isAuthPath && (WRITE_METHODS.has(req.method) || isDashboardPath)) {
+  const isAdminUsersPath = req.path.startsWith("/admin/users");
+  if (!isAuthPath && (WRITE_METHODS.has(req.method) || isDashboardPath || isAdminUsersPath)) {
     return requireAdmin(req, res, next);
   } else {
     next();
@@ -38,5 +40,6 @@ router.use(activitiesRouter);
 router.use(mediaRouter);
 router.use(dashboardRouter);
 router.use(backupRouter);
+router.use(adminsRouter);
 
 export default router;

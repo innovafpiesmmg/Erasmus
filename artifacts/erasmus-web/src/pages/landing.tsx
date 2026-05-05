@@ -2,6 +2,7 @@ import { useGetPartners, useGetMobilities, useGetSettings, useGetActivities, use
 import type { Partner, MobilityWithPartner, Settings, Activity, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera, ExternalLink } from "lucide-react";
+import LanguageSelector from "@/components/language-selector";
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
@@ -507,7 +508,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
             {settings?.siteTitle || "IES Manuel Martín González"}
           </div>
         </div>
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4">
           {[
             { href: "#socios", label: "Socios" },
             { href: "#movilidades", label: "Movilidades" },
@@ -522,6 +523,7 @@ function Navbar({ settings }: { settings: Settings | undefined }) {
               {item.label}
             </a>
           ))}
+          <LanguageSelector dark />
           <img
             src="/logo-erasmus.png"
             alt="Erasmus+"

@@ -12,6 +12,7 @@ import AdminActivities from "@/pages/admin-activities";
 import AdminMedia from "@/pages/admin-media";
 import AdminSettings from "@/pages/admin-settings";
 import AdminBackup from "@/pages/admin-backup";
+import AdminUsers from "@/pages/admin-users";
 import ActivityDetail from "@/pages/activity-detail";
 import MobilityDetail from "@/pages/mobility-detail";
 import Gallery from "@/pages/gallery";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/admin/media" component={AdminMedia} />
       <Route path="/admin/ajustes" component={AdminSettings} />
       <Route path="/admin/backup" component={AdminBackup} />
+      <Route path="/admin/usuarios" component={AdminUsers} />
       <Route component={NotFound} />
     </Switch>
   );
