@@ -3,7 +3,7 @@ import { useGetMobility, useGetMedia } from "@workspace/api-client-react";
 import type { Activity, Media, Partner } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
 import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star, Share2, Check } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import PublicHeader from "@/components/public-header";
 
 function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
@@ -216,6 +216,68 @@ function PhotoGallery({ images }: { images: Media[] }) {
   );
 }
 
+function DestinationMap({ partner, color }: { partner: Partner; color: string }) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<{ remove: () => void } | null>(null);
+
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!partner.lat || !partner.lng) return;
+
+    let cancelled = false;
+
+    import("leaflet").then((L) => {
+      if (cancelled || !mapRef.current || mapInstanceRef.current) return;
+
+      const map = L.map(mapRef.current, {
+        center: [partner.lat, partner.lng],
+        zoom: 12,
+        scrollWheelZoom: false,
+      });
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "© OpenStreetMap",
+      }).addTo(map);
+
+      const marker = L.circleMarker([partner.lat, partner.lng], {
+        radius: 10,
+        fillColor: color,
+        color: "#fff",
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9,
+      }).addTo(map);
+
+      marker.bindPopup(`
+        <div style="font-family:system-ui;min-width:160px">
+          <div style="font-weight:700;color:${color};font-size:14px;margin-bottom:2px">${partner.name}</div>
+          <div style="color:#666;font-size:12px">${partner.city}, ${partner.country}</div>
+        </div>
+      `);
+
+      mapInstanceRef.current = map;
+    });
+
+    return () => {
+      cancelled = true;
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, [partner, color]);
+
+  if (!partner.lat || !partner.lng) return null;
+
+  return (
+    <div
+      ref={mapRef}
+      className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 shadow-sm"
+      data-testid="destination-map"
+    />
+  );
+}
+
 function PartnerCard({ partner, color }: { partner: Partner; color: string }) {
   const flag = COUNTRY_FLAGS[partner.country] ?? "🌍";
   return (
@@ -418,6 +480,20 @@ export default function MobilityDetail() {
                 <Globe size={20} style={{ color }} /> Centro de acogida
               </h2>
               <PartnerCard partner={mobility.partner as Partner} color={color} />
+            </motion.section>
+          )}
+
+          {/* Destination map */}
+          {mobility.partner && (mobility.partner as Partner).lat && (mobility.partner as Partner).lng && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+            >
+              <h2 className="text-2xl font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <MapPin size={20} style={{ color }} /> Ubicación del destino
+              </h2>
+              <DestinationMap partner={mobility.partner as Partner} color={color} />
             </motion.section>
           )}
 
