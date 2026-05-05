@@ -347,6 +347,7 @@ export default function AdminPartners() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-100">
+                <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden sm:table-cell w-14">Logo</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3">Centro</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden md:table-cell">País</th>
                 <th className="text-left text-xs font-semibold text-slate-500 px-5 py-3 hidden lg:table-cell">Coordenadas</th>
@@ -357,6 +358,27 @@ export default function AdminPartners() {
             <tbody>
               {partners.map((p) => (
                 <tr key={p.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50" data-testid={`partner-row-${p.id}`}>
+                  <td className="px-5 py-3 hidden sm:table-cell w-14">
+                    {p.logoUrl ? (
+                      <img
+                        src={p.logoUrl}
+                        alt={`Logo ${p.name}`}
+                        data-testid={`partner-logo-${p.id}`}
+                        className="w-10 h-10 object-contain rounded border border-slate-100 bg-white"
+                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextElementSibling as HTMLElement | null)?.style.setProperty("display", "flex"); }}
+                      />
+                    ) : null}
+                    {!p.logoUrl && (
+                      <div className="w-10 h-10 rounded border border-slate-100 bg-slate-50 flex items-center justify-center text-slate-300" data-testid={`partner-logo-placeholder-${p.id}`}>
+                        <ImageOff size={16} />
+                      </div>
+                    )}
+                    {p.logoUrl && (
+                      <div className="w-10 h-10 rounded border border-slate-100 bg-slate-50 items-center justify-center text-slate-300 hidden" data-testid={`partner-logo-error-${p.id}`}>
+                        <ImageOff size={16} />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-5 py-3">
                     <div className="font-medium text-slate-900 text-sm">{p.name}</div>
                     <div className="text-xs text-slate-400">{p.city}</div>
