@@ -21,7 +21,7 @@ const partnerSchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   webUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
-  logoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  logoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")).or(z.string().startsWith("/uploads/")),
   photoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
   socialInstagram: z.string().optional().nullable(),
   socialTwitter: z.string().optional().nullable(),
@@ -58,6 +58,33 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
     resolver: zodResolver(partnerSchema),
     defaultValues: partner ? { ...partner } : { isCoordinator: false },
   });
+
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleLogoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploadError(null);
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/media/upload", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Error al subir el archivo");
+      }
+      const data = await res.json();
+      form.setValue("logoUrl", data.url, { shouldValidate: true, shouldDirty: true });
+    } catch (err: unknown) {
+      setLogoUploadError(err instanceof Error ? err.message : "Error al subir el archivo");
+    } finally {
+      setLogoUploading(false);
+      if (logoFileInputRef.current) logoFileInputRef.current.value = "";
+    }
+  };
 
   const [photoTab, setPhotoTab] = useState<"upload" | "url">("upload");
   const [photoUploading, setPhotoUploading] = useState(false);
@@ -158,9 +185,30 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
             </div>
 
             <div className="col-span-2">
-              <label className="block text-xs font-medium text-slate-700 mb-1">Logo URL</label>
-              <input {...form.register("logoUrl")} type="url" data-testid="input-partner-logo" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" placeholder="https://..." />
+              <label className="block text-xs font-medium text-slate-700 mb-1">Logo</label>
+              <div className="flex gap-2">
+                <input {...form.register("logoUrl")} type="text" data-testid="input-partner-logo" className="flex-1 px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" placeholder="https://..." />
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  disabled={logoUploading}
+                  data-testid="button-upload-logo"
+                  className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50 whitespace-nowrap"
+                >
+                  <Upload size={14} />
+                  {logoUploading ? "Subiendo..." : "Subir archivo"}
+                </button>
+                <input
+                  ref={logoFileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/gif,image/webp"
+                  className="hidden"
+                  data-testid="input-logo-file"
+                  onChange={handleLogoFileChange}
+                />
+              </div>
               {form.formState.errors.logoUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.logoUrl.message}</p>}
+              {logoUploadError && <p className="text-red-500 text-xs mt-0.5">{logoUploadError}</p>}
               <LogoPreview control={form.control} />
             </div>
 
