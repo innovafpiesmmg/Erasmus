@@ -17,12 +17,15 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
-  const sessionExpired = new URLSearchParams(window.location.search).get("reason") === "session_expired";
+  const [sessionExpired, setSessionExpired] = useState(
+    () => new URLSearchParams(window.location.search).get("reason") === "session_expired",
+  );
 
   const login = useAdminLogin({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetAdminMeQueryKey() });
+        setSessionExpired(false);
         setLocation("/admin");
       },
       onError: () => {
@@ -32,6 +35,16 @@ export default function AdminLogin() {
   });
 
   const form = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
+
+  const dismissSessionExpired = () => {
+    if (!sessionExpired) return;
+    setSessionExpired(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("reason")) {
+      url.searchParams.delete("reason");
+      window.history.replaceState({}, "", url.toString());
+    }
+  };
 
   const onSubmit = (data: LoginForm) => {
     setError(null);
@@ -65,7 +78,7 @@ export default function AdminLogin() {
                 <div className="relative">
                   <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                   <input
-                    {...form.register("username")}
+                    {...form.register("username", { onChange: dismissSessionExpired })}
                     type="text"
                     placeholder="admin"
                     autoComplete="username"
@@ -83,7 +96,7 @@ export default function AdminLogin() {
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
                   <input
-                    {...form.register("password")}
+                    {...form.register("password", { onChange: dismissSessionExpired })}
                     type="password"
                     placeholder="••••••••"
                     autoComplete="current-password"
