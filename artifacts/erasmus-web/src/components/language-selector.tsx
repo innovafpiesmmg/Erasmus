@@ -199,12 +199,13 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100";
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative notranslate" translate="no">
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={applying}
         title="Traducir página"
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors ${base} ${applying ? "opacity-60 cursor-wait" : ""}`}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium transition-colors notranslate ${base} ${applying ? "opacity-60 cursor-wait" : ""}`}
+        translate="no"
       >
         <Globe size={15} className={applying ? "animate-spin" : ""} />
         <span className="hidden sm:inline">{currentLang.flag} {currentLang.label}</span>
@@ -212,16 +213,17 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden max-h-80 overflow-y-auto">
+        <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden max-h-80 overflow-y-auto notranslate" translate="no">
           {languages.map((lang) => (
             <button
               key={lang.code}
               onClick={() => selectLanguage(lang.code)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left ${
+              className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left notranslate ${
                 current === lang.code
                   ? "bg-blue-50 text-blue-700 font-medium"
                   : "text-slate-700 hover:bg-slate-50"
               }`}
+              translate="no"
             >
               <span className="text-base leading-none">{lang.flag}</span>
               <span>{lang.label}</span>
