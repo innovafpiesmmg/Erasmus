@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Calendar, MapPin, Leaf, ArrowRight, ImageOff, Share2, Check } from "lucide-react";
 import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
+import { SocialShareIcons } from "@/components/social-share-icons";
 
 const WP_COLORS: Record<string, string> = {
   WP2: "#003399",
@@ -98,19 +99,22 @@ function ShareButton({ color }: { color: string }) {
   };
 
   return (
-    <button
-      onClick={handleShare}
-      data-testid="share-button"
-      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border"
-      style={{
-        background: `${color}12`,
-        color,
-        borderColor: `${color}30`,
-      }}
-    >
-      {copied ? <Check size={15} /> : <Share2 size={15} />}
-      {copied ? "¡Enlace copiado!" : "Compartir"}
-    </button>
+    <div className="flex items-center gap-3">
+      <button
+        onClick={handleShare}
+        data-testid="share-button"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border"
+        style={{
+          background: `${color}12`,
+          color,
+          borderColor: `${color}30`,
+        }}
+      >
+        {copied ? <Check size={15} /> : <Share2 size={15} />}
+        {copied ? "¡Enlace copiado!" : "Compartir"}
+      </button>
+      <SocialShareIcons />
+    </div>
   );
 }
 

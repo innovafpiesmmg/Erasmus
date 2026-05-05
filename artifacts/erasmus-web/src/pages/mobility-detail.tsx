@@ -6,6 +6,7 @@ import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instag
 import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
 import { DestinationMap } from "@/components/destination-map";
+import { SocialShareIcons } from "@/components/social-share-icons";
 
 function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
   useEffect(() => {
@@ -82,14 +83,17 @@ function ShareButton() {
   };
 
   return (
-    <button
-      onClick={handleShare}
-      data-testid="share-button"
-      className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold transition-all"
-    >
-      {copied ? <Check size={15} /> : <Share2 size={15} />}
-      {copied ? "¡Enlace copiado!" : "Compartir"}
-    </button>
+    <div className="flex items-center gap-3">
+      <button
+        onClick={handleShare}
+        data-testid="share-button"
+        className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-semibold transition-all"
+      >
+        {copied ? <Check size={15} /> : <Share2 size={15} />}
+        {copied ? "¡Enlace copiado!" : "Compartir"}
+      </button>
+      <SocialShareIcons />
+    </div>
   );
 }
 
