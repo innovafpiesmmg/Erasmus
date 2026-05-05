@@ -323,7 +323,7 @@ export default function PartnersPage() {
     <div className="min-h-screen bg-slate-50">
       <PublicHeader backTo="/" backLabel="Inicio" />
 
-      <div className="pt-14">
+      <div className="pt-16">
         <div
           className="py-16 text-white"
           style={{ background: "linear-gradient(135deg, #003399 0%, #001a6e 60%, #2D5A27 100%)" }}

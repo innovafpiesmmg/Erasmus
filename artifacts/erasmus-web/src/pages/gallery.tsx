@@ -114,7 +114,7 @@ export default function Gallery() {
     <div className="min-h-screen bg-slate-50">
       <PublicHeader backTo="/" backLabel="Inicio" />
 
-      <div className="pt-14">
+      <div className="pt-16">
         <div className="bg-white border-b border-slate-100 py-12">
           <div className="max-w-5xl mx-auto px-6">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>

@@ -47,7 +47,7 @@ export default function ActivityDetail() {
     return (
       <div className="min-h-screen bg-slate-50">
         <PublicHeader backTo="/" backLabel="Actividades" />
-        <div className="pt-14 max-w-3xl mx-auto px-6 py-16 space-y-4">
+        <div className="pt-16 max-w-3xl mx-auto px-6 py-16 space-y-4">
           <div className="h-8 w-32 bg-slate-200 rounded-full animate-pulse" />
           <div className="h-12 bg-slate-200 rounded-xl animate-pulse" />
           <div className="h-72 bg-slate-200 rounded-2xl animate-pulse" />
@@ -76,7 +76,7 @@ export default function ActivityDetail() {
     <div className="min-h-screen bg-slate-50">
       <PublicHeader backTo="/" backLabel="Actividades" />
 
-      <div className="pt-14">
+      <div className="pt-16">
         {/* ── Header with accent stripe ── */}
         <div className="bg-white border-b border-slate-100">
           <div

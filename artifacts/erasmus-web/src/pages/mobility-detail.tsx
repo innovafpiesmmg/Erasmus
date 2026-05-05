@@ -397,7 +397,7 @@ export default function MobilityDetail() {
     return (
       <div className="min-h-screen bg-slate-50">
         <PublicHeader backTo="/" backLabel="Movilidades" />
-        <div className="pt-14 max-w-4xl mx-auto px-6 py-16 space-y-4">
+        <div className="pt-16 max-w-4xl mx-auto px-6 py-16 space-y-4">
           {[...Array(5)].map((_, i) => (
             <div key={i} className="h-12 bg-slate-200 rounded-xl animate-pulse" />
           ))}
@@ -425,7 +425,7 @@ export default function MobilityDetail() {
     <div className="min-h-screen bg-slate-50">
       <PublicHeader backTo="/" backLabel="Movilidades" />
 
-      <div className="pt-14">
+      <div className="pt-16">
         {/* Hero banner */}
         <div
           className="text-white py-16"
