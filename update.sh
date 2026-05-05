@@ -2,7 +2,8 @@
 # Actualización rápida de la plataforma Erasmus+ SEA
 # IES Manuel Martín González · Guía de Isora, Tenerife
 #
-# Uso:  sudo bash /var/www/sea-erasmus/update.sh
+# Uso recomendado:  sudo sea
+# Uso alternativo:  sudo bash /var/www/sea-erasmus/update.sh
 set -e
 cd "$(dirname "$0")"
 
@@ -13,7 +14,7 @@ ok()    { echo -e "${GREEN}[ OK ]${NC}  $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC}  $1"; }
 die()   { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
 
-[[ "$EUID" -ne 0 ]] && die "Ejecuta este script como root:  sudo bash update.sh"
+[[ "$EUID" -ne 0 ]] && die "Ejecuta este script como root:  sudo sea"
 
 # ── Cargar variables de entorno ───────────────────────────────
 ENV_FILE="/etc/sea-erasmus/env"
@@ -34,8 +35,37 @@ echo -e "${BOLD}${CYAN}▸ Actualizando Plataforma Erasmus+ SEA${NC}"
 echo ""
 
 info "[1/6] Actualizando código desde GitHub..."
+git fetch origin --quiet
+# Restaurar archivos rastreados eliminados accidentalmente (ej. update.sh)
+git checkout -- . 2>/dev/null || true
 git pull --quiet
 ok "Código actualizado."
+
+# Asegurar que el comando global 'sea' existe y está actualizado
+if [ ! -f /usr/local/bin/sea ]; then
+    info "Reinstalando comando global 'sea'..."
+    cat > /usr/local/bin/sea << 'SEAFEOF'
+#!/bin/bash
+# sea — Comando de actualización para Plataforma Erasmus+ SEA
+# Uso: sudo sea
+APP_DIR="/var/www/sea-erasmus"
+[[ "$EUID" -ne 0 ]] && { echo "Usa: sudo sea"; exit 1; }
+cd "$APP_DIR"
+# Restaurar update.sh desde git si fue eliminado accidentalmente
+if [ ! -f "$APP_DIR/update.sh" ]; then
+    echo "[sea] Restaurando update.sh desde git..."
+    git fetch origin --quiet 2>/dev/null || true
+    git checkout -- update.sh 2>/dev/null || \
+    git checkout origin/main -- update.sh 2>/dev/null || {
+        echo "[sea] ERROR: No se pudo restaurar update.sh"
+        exit 1
+    }
+fi
+exec bash "$APP_DIR/update.sh"
+SEAFEOF
+    chmod +x /usr/local/bin/sea
+    ok "Comando 'sea' reinstalado en /usr/local/bin/sea"
+fi
 
 info "[2/6] Instalando dependencias de Node.js..."
 pnpm install --frozen-lockfile 2>/dev/null || pnpm install
@@ -66,4 +96,5 @@ fi
 
 echo ""
 echo -e "${GREEN}${BOLD}✓ Actualización completada.${NC}"
+echo -e "  Para la próxima actualización usa simplemente: ${BOLD}sudo sea${NC}"
 echo ""

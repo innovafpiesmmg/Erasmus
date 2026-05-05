@@ -367,37 +367,29 @@ if [ -n "$CF_TOKEN" ]; then
     ok "Cloudflare Tunnel instalado. Cookies seguras activadas (HTTPS)."
 fi
 
-# ── Script de actualización rápida ────────────────────────────
-cat > "$APP_DIR/update.sh" << 'UPDATEEOF'
+# ── Comando global 'sea' (recuperable aunque se borre update.sh) ──
+section "Instalando comando global 'sea'"
+cat > /usr/local/bin/sea << 'SEAFEOF'
 #!/bin/bash
-# Actualización rápida de la plataforma Erasmus+ SEA
-set -e
-cd "$(dirname "$0")"
-
-# Cargar variables de entorno
-ENV_FILE="/etc/sea-erasmus/env"
-if [ -f "$ENV_FILE" ]; then
-    while IFS='=' read -r key value; do
-        [[ "$key" =~ ^[[:space:]]*#.*$ || -z "$key" ]] && continue
-        export "$key=$value" 2>/dev/null || true
-    done < "$ENV_FILE"
+# sea — Comando de actualización para Plataforma Erasmus+ SEA
+# Uso: sudo sea
+APP_DIR="/var/www/sea-erasmus"
+[[ "$EUID" -ne 0 ]] && { echo "Usa: sudo sea"; exit 1; }
+cd "$APP_DIR"
+# Restaurar update.sh desde git si fue eliminado accidentalmente
+if [ ! -f "$APP_DIR/update.sh" ]; then
+    echo "[sea] Restaurando update.sh desde git..."
+    git fetch origin --quiet 2>/dev/null || true
+    git checkout -- update.sh 2>/dev/null || \
+    git checkout origin/main -- update.sh 2>/dev/null || {
+        echo "[sea] ERROR: No se pudo restaurar update.sh"
+        exit 1
+    }
 fi
-
-echo "[1/6] Actualizando código..."
-git pull --quiet
-echo "[2/6] Instalando dependencias..."
-pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-echo "[3/6] Compilando API..."
-pnpm --filter @workspace/api-server run build
-echo "[4/6] Compilando frontend..."
-PORT=3000 BASE_PATH=/ API_PORT=${PORT:-8080} NODE_ENV=production pnpm --filter @workspace/erasmus-web run build
-echo "[5/6] Sincronizando esquema de base de datos..."
-pnpm --filter @workspace/db run push-force
-echo "[6/6] Reiniciando servicio..."
-systemctl restart sea-erasmus
-echo "✓ Actualización completada."
-UPDATEEOF
-chmod +x "$APP_DIR/update.sh"
+exec bash "$APP_DIR/update.sh"
+SEAFEOF
+chmod +x /usr/local/bin/sea
+ok "Comando 'sea' instalado → usa 'sudo sea' para actualizar en el futuro."
 
 # ── Resumen final ─────────────────────────────────────────────
 SERVER_IP=$(hostname -I | awk '{print $1}')
@@ -415,10 +407,10 @@ echo -e "  ${BOLD}Panel de admin:${NC}   /admin/login"
 echo -e "  ${BOLD}Usuario admin:${NC}    $ADMIN_USERNAME"
 echo ""
 echo -e "  ${BOLD}Comandos útiles:${NC}"
+echo "    Actualizar plataforma: sudo sea"
 echo "    Estado del servicio:   systemctl status $APP_NAME"
 echo "    Ver logs en tiempo real: journalctl -u $APP_NAME -f"
 echo "    Reiniciar servicio:    systemctl restart $APP_NAME"
-echo "    Actualizar plataforma: sudo bash $APP_DIR/update.sh"
 echo ""
 echo -e "  ${BOLD}Archivos clave:${NC}"
 echo "    Configuración:  $CONFIG_DIR/env"
