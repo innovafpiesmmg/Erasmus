@@ -237,8 +237,15 @@ export default function AdminMedia() {
     mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getGetMediaQueryKey() }) },
   });
   const [showModal, setShowModal] = useState(false);
+  const [filterMobilityId, setFilterMobilityId] = useState<string>("all");
 
   const mobilityMap = Object.fromEntries(mobilities.map((m) => [m.id, m]));
+
+  const filteredMedia = filterMobilityId === "all"
+    ? media
+    : filterMobilityId === "unlinked"
+      ? media.filter((m) => m.mobilityId == null)
+      : media.filter((m) => m.mobilityId === Number(filterMobilityId));
 
   return (
     <AdminLayout>
@@ -257,19 +264,34 @@ export default function AdminMedia() {
         </button>
       </div>
 
+      <div className="mb-5">
+        <select
+          value={filterMobilityId}
+          onChange={(e) => setFilterMobilityId(e.target.value)}
+          data-testid="select-filter-mobility"
+          className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20 bg-white"
+        >
+          <option value="all">Todas las fotos</option>
+          <option value="unlinked">Sin asociar</option>
+          {mobilities.map((mob) => (
+            <option key={mob.id} value={mob.id}>{mob.workPackage} – {mob.theme}</option>
+          ))}
+        </select>
+      </div>
+
       {isLoading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {[...Array(6)].map((_, i) => <div key={i} className="aspect-video bg-white rounded-xl border border-slate-100 animate-pulse" />)}
         </div>
-      ) : media.length === 0 ? (
+      ) : filteredMedia.length === 0 ? (
         <div className="text-center py-20 text-slate-400">
           <Image size={40} className="mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No hay archivos media aún</p>
-          <p className="text-xs mt-1">Sube imágenes usando el botón de arriba</p>
+          <p className="text-sm">{media.length === 0 ? "No hay archivos media aún" : "Ninguna foto coincide con el filtro"}</p>
+          {media.length === 0 && <p className="text-xs mt-1">Sube imágenes usando el botón de arriba</p>}
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {media.map((m) => {
+          {filteredMedia.map((m) => {
             const linkedMobility = m.mobilityId != null ? mobilityMap[m.mobilityId] : null;
             return (
               <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
@@ -283,13 +305,17 @@ export default function AdminMedia() {
                     <Trash2 size={16} />
                   </button>
                 </div>
-                {linkedMobility && (
-                  <div className="absolute top-2 left-2" data-testid={`media-mobility-badge-${m.id}`}>
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#003399]/90 text-white backdrop-blur-sm truncate max-w-[120px]">
-                      {linkedMobility.theme}
+                <div className="absolute top-2 left-2" data-testid={`media-mobility-badge-${m.id}`}>
+                  {linkedMobility ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#003399]/90 text-white backdrop-blur-sm truncate max-w-[140px]">
+                      {linkedMobility.workPackage} – {linkedMobility.theme}
                     </span>
-                  </div>
-                )}
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-800/60 text-slate-200 backdrop-blur-sm">
+                      Sin asociar
+                    </span>
+                  )}
+                </div>
                 {m.caption && (
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
                     <p className="text-white text-xs truncate">{m.caption}</p>
