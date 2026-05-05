@@ -205,6 +205,7 @@ export type MediaMediaType =
 
 export const MediaMediaType = {
   image: "image",
+  video: "video",
 } as const;
 
 export interface Media {
@@ -223,6 +224,7 @@ export type CreateMediaBodyMediaType =
 
 export const CreateMediaBodyMediaType = {
   image: "image",
+  video: "video",
 } as const;
 
 export interface CreateMediaBody {

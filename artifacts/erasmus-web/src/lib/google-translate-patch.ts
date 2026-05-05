@@ -6,7 +6,7 @@ export function applyGoogleTranslatePatch(): void {
   w.__seaGTPatchApplied = true;
 
   const originalRemoveChild = Node.prototype.removeChild;
-  Node.prototype.removeChild = function <T extends Node>(child: T): T {
+  Node.prototype.removeChild = function <T extends Node>(this: Node, child: T): T {
     if (child.parentNode !== this) {
       if (child.parentNode) {
         return originalRemoveChild.call(child.parentNode, child) as T;
@@ -18,6 +18,7 @@ export function applyGoogleTranslatePatch(): void {
 
   const originalInsertBefore = Node.prototype.insertBefore;
   Node.prototype.insertBefore = function <T extends Node>(
+    this: Node,
     newNode: T,
     referenceNode: Node | null,
   ): T {

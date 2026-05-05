@@ -3,8 +3,9 @@ import { Link } from "wouter";
 import { useGetMedia, useGetMobilities } from "@workspace/api-client-react";
 import type { MobilityWithPartner, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Camera, MapPin, Calendar, ChevronRight, ImageOff } from "lucide-react";
+import { Camera, MapPin, Calendar, ChevronRight, ImageOff, Play } from "lucide-react";
 import PublicHeader from "@/components/public-header";
+import PhotoLightbox from "@/components/photo-lightbox";
 
 const WP_COLORS: Record<string, string> = {
   WP2: "#003399",
@@ -36,6 +37,14 @@ function getAcademicYear(dateStr: string): AcademicYear {
   return (ACADEMIC_YEARS.includes(label as AcademicYear) ? label : "2025-2026") as AcademicYear;
 }
 
+function mediaCountLabel(items: { mediaType?: string }[]) {
+  const videos = items.filter((m) => m.mediaType === "video").length;
+  const images = items.length - videos;
+  if (videos === 0) return images === 1 ? "foto" : "fotos";
+  if (images === 0) return videos === 1 ? "vídeo" : "vídeos";
+  return "elementos";
+}
+
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", {
     day: "numeric",
@@ -55,6 +64,7 @@ function MobilityGallerySection({
 }) {
   const color = WP_COLORS[mobility.workPackage] ?? "#003399";
   const flag = COUNTRY_FLAGS[mobility.partner?.country ?? ""] ?? "🌍";
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   return (
     <motion.section
@@ -99,7 +109,7 @@ function MobilityGallerySection({
                 </span>
                 <span className="inline-flex items-center gap-1 text-slate-400">
                   <Camera size={11} />
-                  {photos.length} {photos.length === 1 ? "foto" : "fotos"}
+                  {photos.length} {mediaCountLabel(photos)}
                 </span>
               </div>
             </div>
@@ -117,32 +127,70 @@ function MobilityGallerySection({
 
       {/* Photo grid */}
       <div className="p-5 sm:p-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-        {photos.map((m, i) => (
-          <motion.div
-            key={m.id}
-            initial={{ opacity: 0, scale: 0.96 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ delay: Math.min(i * 0.04, 0.3) }}
-            className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm hover:shadow-md transition-all"
-            data-testid={`gallery-photo-${m.id}`}
-          >
-            <img
-              src={m.url}
-              alt={m.caption ?? "Erasmus+"}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-              loading="lazy"
-            />
-            {m.caption && (
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2.5 pt-6">
-                <p className="text-white text-xs leading-snug line-clamp-2 drop-shadow">
-                  {m.caption}
-                </p>
-              </div>
-            )}
-          </motion.div>
-        ))}
+        {photos.map((m, i) => {
+          const isVideo = m.mediaType === "video";
+          return (
+            <motion.button
+              type="button"
+              key={m.id}
+              onClick={() => setLightboxIndex(i)}
+              initial={{ opacity: 0, scale: 0.96 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: Math.min(i * 0.04, 0.3) }}
+              className="group relative aspect-video rounded-xl overflow-hidden bg-slate-100 shadow-sm hover:shadow-md transition-all cursor-zoom-in text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              style={{ ['--tw-ring-color' as string]: color }}
+              aria-label={
+                isVideo
+                  ? m.caption ? `Reproducir vídeo: ${m.caption}` : "Reproducir vídeo"
+                  : m.caption ? `Ampliar foto: ${m.caption}` : "Ampliar foto"
+              }
+              data-testid={`gallery-photo-${m.id}`}
+            >
+              {isVideo ? (
+                <video
+                  src={m.url}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  preload="metadata"
+                  muted
+                  playsInline
+                />
+              ) : (
+                <img
+                  src={m.url}
+                  alt={m.caption ?? "Erasmus+"}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  loading="lazy"
+                />
+              )}
+              {isVideo && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  data-testid={`gallery-photo-play-${m.id}`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white shadow-lg group-hover:bg-black/70 transition-colors">
+                    <Play size={20} className="translate-x-0.5" fill="currentColor" />
+                  </div>
+                </div>
+              )}
+              {m.caption && (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2.5 pt-6">
+                  <p className="text-white text-xs leading-snug line-clamp-2 drop-shadow">
+                    {m.caption}
+                  </p>
+                </div>
+              )}
+            </motion.button>
+          );
+        })}
       </div>
+
+      <PhotoLightbox
+        photos={photos}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
 
       {/* Mobile-only "Ver movilidad" link at the bottom */}
       <div className="px-5 pb-5 sm:hidden">
@@ -171,10 +219,15 @@ export default function Gallery() {
   const sectionsWithPhotos = mobilitiesForYear
     .map((mob) => ({
       mobility: mob,
-      photos: media.filter((ph) => ph.mobilityId === mob.id),
+      photos: media.filter(
+        (ph) =>
+          ph.mobilityId === mob.id &&
+          (ph.mediaType === "image" || ph.mediaType === "video"),
+      ),
     }))
     .filter(({ photos }) => photos.length > 0);
 
+  const allItems = sectionsWithPhotos.flatMap((s) => s.photos);
   const totalPhotos = sectionsWithPhotos.reduce(
     (acc, s) => acc + s.photos.length,
     0,
@@ -249,7 +302,7 @@ export default function Gallery() {
                 <span className="inline-flex items-center gap-1.5">
                   <Camera size={12} className="text-[#003399]" />
                   <strong className="text-slate-700">{totalPhotos}</strong>{" "}
-                  {totalPhotos === 1 ? "foto" : "fotos"}
+                  {mediaCountLabel(allItems)}
                 </span>
                 <span className="text-slate-300">·</span>
                 <span>

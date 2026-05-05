@@ -4,11 +4,12 @@ import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Image, X, Upload, Link, Pencil } from "lucide-react";
+import { Plus, Trash2, Image, X, Upload, Link, Pencil, Play, Film } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const urlSchema = z.object({
-  url: z.string().url("URL de imagen inválida"),
+  url: z.string().url("URL inválida"),
+  mediaType: z.enum(["image", "video"]),
   caption: z.string().optional().nullable(),
   mobilityId: z.coerce.number().optional().nullable(),
 });
@@ -51,11 +52,11 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
 
   const form = useForm<UrlForm>({
     resolver: zodResolver(urlSchema),
-    defaultValues: { url: "", caption: "", mobilityId: null },
+    defaultValues: { url: "", mediaType: "image", caption: "", mobilityId: null },
   });
 
   const onUrlSubmit = (data: UrlForm) => {
-    create.mutate({ data: { ...data, mediaType: "image", caption: data.caption || null, mobilityId: data.mobilityId || null } });
+    create.mutate({ data: { ...data, caption: data.caption || null, mobilityId: data.mobilityId || null } });
   };
 
   const handleFileSelect = (file: File) => {
@@ -184,15 +185,42 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
         ) : (
           <form onSubmit={form.handleSubmit(onUrlSubmit)} className="p-5 space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">URL de la imagen *</label>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Tipo *</label>
+              <div className="grid grid-cols-2 gap-2" data-testid="media-type-tabs">
+                {(["image", "video"] as const).map((t) => {
+                  const selected = form.watch("mediaType") === t;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => form.setValue("mediaType", t, { shouldValidate: true })}
+                      data-testid={`media-type-${t}`}
+                      className={`py-2 rounded-lg text-sm font-medium border transition-colors ${selected ? "bg-[#003399] text-white border-[#003399]" : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"}`}
+                    >
+                      {t === "image" ? "Imagen" : "Vídeo"}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">
+                URL {form.watch("mediaType") === "video" ? "del vídeo" : "de la imagen"} *
+              </label>
               <input
                 {...form.register("url")}
                 type="url"
                 data-testid="input-media-url"
-                placeholder="https://..."
+                placeholder={form.watch("mediaType") === "video" ? "https://...mp4" : "https://..."}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
               />
               {form.formState.errors.url && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.url.message}</p>}
+              {form.watch("mediaType") === "video" && (
+                <p className="text-xs text-slate-400 mt-1">
+                  Pega un enlace directo a un archivo de vídeo (MP4, WebM…). No se admiten enlaces de YouTube.
+                </p>
+              )}
             </div>
 
             <div>
@@ -240,6 +268,7 @@ type MediaItem = {
   url: string;
   caption?: string | null;
   mobilityId?: number | null;
+  mediaType?: string;
 };
 
 function EditMediaModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
@@ -282,7 +311,11 @@ function EditMediaModal({ item, onClose }: { item: MediaItem; onClose: () => voi
 
         <div className="p-5">
           <div className="mb-4 rounded-xl overflow-hidden aspect-video bg-slate-100">
-            <img src={item.url} alt={item.caption || "Media"} className="w-full h-full object-cover" />
+            {item.mediaType === "video" ? (
+              <video src={item.url} className="w-full h-full object-cover" controls preload="metadata" />
+            ) : (
+              <img src={item.url} alt={item.caption || "Media"} className="w-full h-full object-cover" />
+            )}
           </div>
 
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
@@ -394,12 +427,24 @@ export default function AdminMedia() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredMedia.map((m) => {
             const linkedMobility = m.mobilityId != null ? mobilityMap[m.mobilityId] : null;
+            const isVideo = m.mediaType === "video";
             return (
               <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
-                <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
+                {isVideo ? (
+                  <video src={m.url} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                ) : (
+                  <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
+                )}
+                {isVideo && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none" data-testid={`media-item-play-${m.id}`}>
+                    <div className="w-10 h-10 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
+                      <Play size={16} className="translate-x-0.5" fill="currentColor" />
+                    </div>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                   <button
-                    onClick={() => setEditItem({ id: m.id, url: m.url, caption: m.caption, mobilityId: m.mobilityId })}
+                    onClick={() => setEditItem({ id: m.id, url: m.url, caption: m.caption, mobilityId: m.mobilityId, mediaType: m.mediaType })}
                     data-testid={`button-edit-media-${m.id}`}
                     className="p-2 bg-white text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
                   >
@@ -413,7 +458,12 @@ export default function AdminMedia() {
                     <Trash2 size={16} />
                   </button>
                 </div>
-                <div className="absolute top-2 left-2" data-testid={`media-mobility-badge-${m.id}`}>
+                <div className="absolute top-2 left-2 flex gap-1" data-testid={`media-mobility-badge-${m.id}`}>
+                  {isVideo && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-black/70 text-white backdrop-blur-sm">
+                      <Film size={10} /> Vídeo
+                    </span>
+                  )}
                   {linkedMobility ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#003399]/90 text-white backdrop-blur-sm truncate max-w-[140px]">
                       {linkedMobility.workPackage} – {linkedMobility.theme}

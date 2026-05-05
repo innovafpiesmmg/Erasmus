@@ -1,8 +1,9 @@
 import { useGetPartners, useGetMobilities, useGetSettings, useGetActivities, useGetMedia } from "@workspace/api-client-react";
 import type { Partner, MobilityWithPartner, Settings, Activity, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera, ExternalLink } from "lucide-react";
+import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera, ExternalLink, Play } from "lucide-react";
 import LanguageSelector from "@/components/language-selector";
+import PhotoLightbox from "@/components/photo-lightbox";
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
@@ -357,7 +358,10 @@ function MobilitiesTimeline({ mobilities }: { mobilities: MobilityWithPartner[] 
 }
 
 function GallerySection({ media }: { media: Media[] }) {
-  const images = media.filter((m) => m.mediaType === "image").slice(0, 6);
+  const images = media
+    .filter((m) => m.mediaType === "image" || m.mediaType === "video")
+    .slice(0, 6);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   if (!images.length) return null;
 
   return (
@@ -377,25 +381,62 @@ function GallerySection({ media }: { media: Media[] }) {
         </motion.div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {images.map((m, i) => (
-            <motion.div
-              key={m.id}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08 }}
-              className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-shadow"
-              data-testid={`media-item-${m.id}`}
-            >
-              <img src={m.url} alt={m.caption || "Erasmus+"} className="w-full h-full object-cover" loading="lazy" />
-              {m.caption && (
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                  <p className="text-white text-xs">{m.caption}</p>
-                </div>
-              )}
-            </motion.div>
-          ))}
+          {images.map((m, i) => {
+            const isVideo = m.mediaType === "video";
+            return (
+              <motion.button
+                type="button"
+                key={m.id}
+                onClick={() => setLightboxIndex(i)}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.08 }}
+                className="group relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-shadow cursor-zoom-in text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#003399] focus-visible:ring-offset-2"
+                aria-label={
+                  isVideo
+                    ? m.caption ? `Reproducir vídeo: ${m.caption}` : "Reproducir vídeo"
+                    : m.caption ? `Ampliar foto: ${m.caption}` : "Ampliar foto"
+                }
+                data-testid={`media-item-${m.id}`}
+              >
+                {isVideo ? (
+                  <video
+                    src={m.url}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    preload="metadata"
+                    muted
+                    playsInline
+                  />
+                ) : (
+                  <img src={m.url} alt={m.caption || "Erasmus+"} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
+                )}
+                {isVideo && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    data-testid={`media-item-play-${m.id}`}
+                  >
+                    <div className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white shadow-lg group-hover:bg-black/70 transition-colors">
+                      <Play size={20} className="translate-x-0.5" fill="currentColor" />
+                    </div>
+                  </div>
+                )}
+                {m.caption && (
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <p className="text-white text-xs">{m.caption}</p>
+                  </div>
+                )}
+              </motion.button>
+            );
+          })}
         </div>
+
+        <PhotoLightbox
+          photos={images}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
 
         <motion.div
           initial={{ opacity: 0, y: 10 }}

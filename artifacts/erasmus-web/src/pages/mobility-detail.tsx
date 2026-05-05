@@ -2,11 +2,12 @@ import { useParams, Link } from "wouter";
 import { useGetMobility, useGetMedia } from "@workspace/api-client-react";
 import type { Activity, Media, Partner } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star, Share2, Check } from "lucide-react";
+import { Calendar, MapPin, Camera, Leaf, ArrowRight, Globe, ExternalLink, Instagram, Twitter, Star, Share2, Check, Play } from "lucide-react";
 import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
 import { DestinationMap } from "@/components/destination-map";
 import { SocialShareIcons } from "@/components/social-share-icons";
+import PhotoLightbox from "@/components/photo-lightbox";
 
 function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
   useEffect(() => {
@@ -123,63 +124,6 @@ function formatDate(d: string) {
   });
 }
 
-function LightboxModal({ images, initialIndex, onClose }: { images: Media[]; initialIndex: number; onClose: () => void }) {
-  const [current, setCurrent] = useState(initialIndex);
-
-  const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
-  const next = () => setCurrent((c) => (c + 1) % images.length);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
-      onClick={onClose}
-      data-testid="lightbox-overlay"
-    >
-      <button
-        className="absolute top-4 right-4 text-white/70 hover:text-white text-3xl leading-none"
-        onClick={onClose}
-        data-testid="lightbox-close"
-      >
-        ×
-      </button>
-
-      {images.length > 1 && (
-        <>
-          <button
-            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 rounded-full w-10 h-10 flex items-center justify-center"
-            onClick={(e) => { e.stopPropagation(); prev(); }}
-            data-testid="lightbox-prev"
-          >
-            ‹
-          </button>
-          <button
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white bg-white/10 rounded-full w-10 h-10 flex items-center justify-center"
-            onClick={(e) => { e.stopPropagation(); next(); }}
-            data-testid="lightbox-next"
-          >
-            ›
-          </button>
-        </>
-      )}
-
-      <div className="max-w-4xl max-h-[80vh] flex flex-col items-center" onClick={(e) => e.stopPropagation()}>
-        <img
-          src={images[current].url}
-          alt={images[current].caption || "Erasmus+"}
-          className="max-h-[70vh] max-w-full object-contain rounded-xl"
-          data-testid="lightbox-image"
-        />
-        {images[current].caption && (
-          <p className="text-white/70 text-sm mt-3 text-center">{images[current].caption}</p>
-        )}
-        {images.length > 1 && (
-          <div className="text-white/40 text-xs mt-2">{current + 1} / {images.length}</div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function PhotoGallery({ images }: { images: Media[] }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
@@ -195,28 +139,53 @@ function PhotoGallery({ images }: { images: Media[] }) {
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4" data-testid="photo-gallery">
-        {images.map((img, i) => (
-          <motion.button
-            key={img.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.25 + i * 0.05 }}
-            className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer"
-            onClick={() => setLightboxIndex(i)}
-            data-testid={`gallery-image-${img.id}`}
-          >
-            <img src={img.url} alt={img.caption ?? "Erasmus+"} className="w-full h-full object-cover" loading="lazy" />
-            {img.caption && (
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                <p className="text-white text-xs line-clamp-1">{img.caption}</p>
-              </div>
-            )}
-          </motion.button>
-        ))}
+        {images.map((img, i) => {
+          const isVideo = img.mediaType === "video";
+          return (
+            <motion.button
+              key={img.id}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.25 + i * 0.05 }}
+              className="relative aspect-video rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-md transition-all hover:scale-[1.02] cursor-pointer"
+              onClick={() => setLightboxIndex(i)}
+              data-testid={`gallery-image-${img.id}`}
+              aria-label={
+                isVideo
+                  ? img.caption ? `Reproducir vídeo: ${img.caption}` : "Reproducir vídeo"
+                  : img.caption ? `Ampliar foto: ${img.caption}` : "Ampliar foto"
+              }
+            >
+              {isVideo ? (
+                <video src={img.url} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+              ) : (
+                <img src={img.url} alt={img.caption ?? "Erasmus+"} className="w-full h-full object-cover" loading="lazy" />
+              )}
+              {isVideo && (
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  data-testid={`gallery-image-play-${img.id}`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
+                    <Play size={20} className="translate-x-0.5" fill="currentColor" />
+                  </div>
+                </div>
+              )}
+              {img.caption && (
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                  <p className="text-white text-xs line-clamp-1">{img.caption}</p>
+                </div>
+              )}
+            </motion.button>
+          );
+        })}
       </div>
-      {lightboxIndex !== null && (
-        <LightboxModal images={images} initialIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} />
-      )}
+      <PhotoLightbox
+        photos={images}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onIndexChange={setLightboxIndex}
+      />
     </>
   );
 }
