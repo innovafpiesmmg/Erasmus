@@ -360,15 +360,27 @@ cat > "$APP_DIR/update.sh" << 'UPDATEEOF'
 # Actualización rápida de la plataforma Erasmus+ SEA
 set -e
 cd "$(dirname "$0")"
-echo "[1/5] Actualizando código..."
+
+# Cargar variables de entorno
+ENV_FILE="/etc/sea-erasmus/env"
+if [ -f "$ENV_FILE" ]; then
+    while IFS='=' read -r key value; do
+        [[ "$key" =~ ^[[:space:]]*#.*$ || -z "$key" ]] && continue
+        export "$key=$value" 2>/dev/null || true
+    done < "$ENV_FILE"
+fi
+
+echo "[1/6] Actualizando código..."
 git pull --quiet
-echo "[2/5] Instalando dependencias..."
+echo "[2/6] Instalando dependencias..."
 pnpm install --frozen-lockfile 2>/dev/null || pnpm install
-echo "[3/5] Compilando API..."
+echo "[3/6] Compilando API..."
 pnpm --filter @workspace/api-server run build
-echo "[4/5] Compilando frontend..."
-PORT=3000 BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/erasmus-web run build
-echo "[5/5] Reiniciando servicio..."
+echo "[4/6] Compilando frontend..."
+PORT=3000 BASE_PATH=/ API_PORT=${PORT:-8080} NODE_ENV=production pnpm --filter @workspace/erasmus-web run build
+echo "[5/6] Sincronizando esquema de base de datos..."
+pnpm --filter @workspace/db run push-force
+echo "[6/6] Reiniciando servicio..."
 systemctl restart sea-erasmus
 echo "✓ Actualización completada."
 UPDATEEOF
