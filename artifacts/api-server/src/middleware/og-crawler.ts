@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { eq } from "drizzle-orm";
+import { LRUCache } from "lru-cache";
 import { db, mobilitiesTable, partnersTable, activitiesTable } from "@workspace/db";
 
 const CRAWLER_PATTERNS = [
@@ -21,6 +22,14 @@ const CRAWLER_PATTERNS = [
 function isCrawler(userAgent: string): boolean {
   return CRAWLER_PATTERNS.some((p) => p.test(userAgent));
 }
+
+const OG_CACHE_TTL_MS = 5 * 60 * 1000;
+const OG_CACHE_MAX_ENTRIES = 500;
+
+const ogHtmlCache = new LRUCache<string, string>({
+  max: OG_CACHE_MAX_ENTRIES,
+  ttl: OG_CACHE_TTL_MS,
+});
 
 function escapeHtml(str: string): string {
   return str
@@ -112,6 +121,18 @@ function getSiteUrl(req: Request): string {
   return `${proto}://${host}`;
 }
 
+function sendCachedHtml(res: Response, html: string): void {
+  res
+    .status(200)
+    .set("Content-Type", "text/html; charset=utf-8")
+    .set("Cache-Control", "public, max-age=300, s-maxage=300")
+    .end(html);
+}
+
+export function clearOgCache(): void {
+  ogHtmlCache.clear();
+}
+
 export async function ogCrawlerMiddleware(
   req: Request,
   res: Response,
@@ -136,6 +157,12 @@ export async function ogCrawlerMiddleware(
   try {
     if (mobilityMatch) {
       const id = Number(mobilityMatch[1]);
+      const cacheKey = `mobility:${id}:${siteUrl}`;
+
+      const cached = ogHtmlCache.get(cacheKey);
+      if (cached) {
+        return sendCachedHtml(res, cached);
+      }
 
       const mobility = await db
         .select()
@@ -164,12 +191,16 @@ export async function ogCrawlerMiddleware(
         siteUrl
       );
 
-      res.status(200)
-        .set("Content-Type", "text/html; charset=utf-8")
-        .set("Cache-Control", "public, max-age=300, s-maxage=300")
-        .end(html);
+      ogHtmlCache.set(cacheKey, html);
+      sendCachedHtml(res, html);
     } else {
       const id = Number(activityMatch![1]);
+      const cacheKey = `activity:${id}:${siteUrl}`;
+
+      const cached = ogHtmlCache.get(cacheKey);
+      if (cached) {
+        return sendCachedHtml(res, cached);
+      }
 
       const activity = await db
         .select()
@@ -191,10 +222,8 @@ export async function ogCrawlerMiddleware(
         siteUrl
       );
 
-      res.status(200)
-        .set("Content-Type", "text/html; charset=utf-8")
-        .set("Cache-Control", "public, max-age=300, s-maxage=300")
-        .end(html);
+      ogHtmlCache.set(cacheKey, html);
+      sendCachedHtml(res, html);
     }
   } catch {
     next();
