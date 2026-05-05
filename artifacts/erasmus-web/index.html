@@ -15,17 +15,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Suppress Google Translate toolbar before app CSS loads (prevents flash) -->
+    <!-- Hide GT toolbar at all times — we provide our own language selector -->
     <style>
       .goog-te-banner-frame, .skiptranslate, #goog-gt-tt,
       .goog-tooltip, .goog-te-balloon-frame { display: none !important; }
       body { top: 0 !important; }
     </style>
-    <!-- Google Translate widget — autoDisplay omitted so GT reads googtrans cookie on load -->
+    <!-- Google Translate widget: autoDisplay:false = GT does NOT auto-translate.
+         Language is applied programmatically by LanguageSelector via the combo element. -->
     <script>
       window.googleTranslateElementInit = function () {
         new window.google.translate.TranslateElement(
-          { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk' },
+          { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk', autoDisplay: false },
           'google_translate_element'
         );
       };
@@ -33,7 +34,7 @@
     <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
   </head>
   <body>
-    <!-- Hidden Google Translate anchor — controlled by LanguageSelector -->
+    <!-- Hidden GT widget anchor — LanguageSelector drives it via the combo element -->
     <div id="google_translate_element" style="display:none;position:absolute;"></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
