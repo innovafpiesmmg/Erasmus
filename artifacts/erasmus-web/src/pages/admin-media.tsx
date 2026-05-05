@@ -1,10 +1,10 @@
-import { useGetMedia, useCreateMedia, useDeleteMedia, useUploadMedia, useGetMobilities, getGetMediaQueryKey } from "@workspace/api-client-react";
+import { useGetMedia, useCreateMedia, useDeleteMedia, useUploadMedia, useUpdateMedia, useGetMobilities, getGetMediaQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, Image, X, Upload, Link } from "lucide-react";
+import { Plus, Trash2, Image, X, Upload, Link, Pencil } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const urlSchema = z.object({
@@ -13,6 +13,12 @@ const urlSchema = z.object({
   mobilityId: z.coerce.number().optional().nullable(),
 });
 type UrlForm = z.infer<typeof urlSchema>;
+
+const editSchema = z.object({
+  caption: z.string().optional().nullable(),
+  mobilityId: z.coerce.number().optional().nullable(),
+});
+type EditForm = z.infer<typeof editSchema>;
 
 function AddMediaModal({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient();
@@ -229,6 +235,100 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+type MediaItem = {
+  id: number;
+  url: string;
+  caption?: string | null;
+  mobilityId?: number | null;
+};
+
+function EditMediaModal({ item, onClose }: { item: MediaItem; onClose: () => void }) {
+  const qc = useQueryClient();
+  const { data: mobilities = [] } = useGetMobilities();
+  const updateMedia = useUpdateMedia({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetMediaQueryKey() });
+        onClose();
+      },
+    },
+  });
+
+  const form = useForm<EditForm>({
+    resolver: zodResolver(editSchema),
+    defaultValues: {
+      caption: item.caption ?? "",
+      mobilityId: item.mobilityId ?? null,
+    },
+  });
+
+  const onSubmit = (data: EditForm) => {
+    updateMedia.mutate({
+      id: item.id,
+      data: {
+        caption: data.caption || null,
+        mobilityId: data.mobilityId || null,
+      },
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h2 className="font-semibold text-slate-900">Editar foto</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
+        </div>
+
+        <div className="p-5">
+          <div className="mb-4 rounded-xl overflow-hidden aspect-video bg-slate-100">
+            <img src={item.url} alt={item.caption || "Media"} className="w-full h-full object-cover" />
+          </div>
+
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Descripción</label>
+              <input
+                {...form.register("caption")}
+                data-testid="input-edit-caption"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
+                placeholder="Opcional"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">Movilidad asociada</label>
+              <select
+                {...form.register("mobilityId")}
+                data-testid="select-edit-mobility"
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
+              >
+                <option value="">Sin asociar</option>
+                {mobilities.map((m) => (
+                  <option key={m.id} value={m.id}>{m.partner?.name} — {m.theme}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
+              <button
+                type="submit"
+                disabled={updateMedia.isPending}
+                data-testid="button-save-edit-media"
+                className="flex-1 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
+                style={{ background: "#003399" }}
+              >
+                {updateMedia.isPending ? "Guardando..." : "Guardar cambios"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminMedia() {
   const { data: media = [], isLoading } = useGetMedia();
   const { data: mobilities = [] } = useGetMobilities();
@@ -237,6 +337,7 @@ export default function AdminMedia() {
     mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getGetMediaQueryKey() }) },
   });
   const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState<MediaItem | null>(null);
   const [filterMobilityId, setFilterMobilityId] = useState<string>("all");
 
   const mobilityMap = Object.fromEntries(mobilities.map((m) => [m.id, m]));
@@ -296,7 +397,14 @@ export default function AdminMedia() {
             return (
               <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
                 <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={() => setEditItem({ id: m.id, url: m.url, caption: m.caption, mobilityId: m.mobilityId })}
+                    data-testid={`button-edit-media-${m.id}`}
+                    className="p-2 bg-white text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+                  >
+                    <Pencil size={16} />
+                  </button>
                   <button
                     onClick={() => { if (confirm("¿Eliminar este archivo?")) deleteMedia.mutate({ id: m.id }); }}
                     data-testid={`button-delete-media-${m.id}`}
@@ -328,6 +436,7 @@ export default function AdminMedia() {
       )}
 
       {showModal && <AddMediaModal onClose={() => setShowModal(false)} />}
+      {editItem && <EditMediaModal item={editItem} onClose={() => setEditItem(null)} />}
     </AdminLayout>
   );
 }

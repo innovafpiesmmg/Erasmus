@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
 import { db, mediaTable, mobilitiesTable } from "@workspace/db";
-import { CreateMediaBody, DeleteMediaParams } from "@workspace/api-zod";
+import { CreateMediaBody, DeleteMediaParams, UpdateMediaBody, UpdateMediaParams } from "@workspace/api-zod";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -134,6 +134,55 @@ router.post("/media", async (req, res) => {
     res.status(201).json(inserted[0]);
   } catch {
     res.status(500).json({ error: "Failed to create media" });
+  }
+});
+
+router.patch("/media/:id", async (req, res) => {
+  try {
+    const params = UpdateMediaParams.safeParse({ id: Number(req.params.id) });
+    if (!params.success) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const body = UpdateMediaBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: "Invalid request body" });
+      return;
+    }
+
+    const { mobilityId, caption } = body.data;
+
+    if (mobilityId != null) {
+      const exists = await validateMobilityId(mobilityId);
+      if (!exists) {
+        res.status(400).json({ error: "Mobility not found" });
+        return;
+      }
+    }
+
+    const updateFields: Record<string, unknown> = {};
+    if ("caption" in req.body) updateFields.caption = caption ?? null;
+    if ("mobilityId" in req.body) updateFields.mobilityId = mobilityId ?? null;
+
+    if (Object.keys(updateFields).length === 0) {
+      res.status(400).json({ error: "No updatable fields provided" });
+      return;
+    }
+
+    const [updated] = await db
+      .update(mediaTable)
+      .set(updateFields)
+      .where(eq(mediaTable.id, params.data.id))
+      .returning();
+
+    if (!updated) {
+      res.status(404).json({ error: "Media not found" });
+      return;
+    }
+
+    res.json(updated);
+  } catch {
+    res.status(500).json({ error: "Failed to update media" });
   }
 });
 

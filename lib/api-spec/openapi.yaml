@@ -525,6 +525,35 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   /media/{id}:
+    patch:
+      operationId: updateMedia
+      tags: [media]
+      summary: Update a media item (caption and/or mobility)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMediaBody"
+      responses:
+        "200":
+          description: Updated media item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Media"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
     delete:
       operationId: deleteMedia
       tags: [media]
@@ -587,6 +616,8 @@ components:
           type: boolean
         username:
           type: string
+        partnerId:
+          type: ["integer", "null"]
       required:
         - authenticated
         - username
@@ -641,6 +672,10 @@ components:
           type: string
         projectDescription:
           type: string
+        projectStartYear:
+          type: ["string", "null"]
+        projectEndYear:
+          type: ["string", "null"]
         heroTitle:
           type: string
         heroSubtitle:
@@ -678,6 +713,10 @@ components:
           type: string
         projectDescription:
           type: string
+        projectStartYear:
+          type: ["string", "null"]
+        projectEndYear:
+          type: ["string", "null"]
         heroTitle:
           type: string
         heroSubtitle:
@@ -715,6 +754,8 @@ components:
         webUrl:
           type: ["string", "null"]
         logoUrl:
+          type: ["string", "null"]
+        photoUrl:
           type: ["string", "null"]
         socialInstagram:
           type: ["string", "null"]
@@ -764,6 +805,8 @@ components:
         webUrl:
           type: ["string", "null"]
         logoUrl:
+          type: ["string", "null"]
+        photoUrl:
           type: ["string", "null"]
         socialInstagram:
           type: ["string", "null"]
@@ -928,3 +971,11 @@ components:
       required:
         - url
         - mediaType
+
+    UpdateMediaBody:
+      type: object
+      properties:
+        caption:
+          type: ["string", "null"]
+        mobilityId:
+          type: ["integer", "null"]

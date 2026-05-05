@@ -37,6 +37,7 @@ import type {
   Partner,
   PartnerWithMobilities,
   Settings,
+  UpdateMediaBody,
   UpdateSettingsBody,
   UploadMediaBody,
 } from "./api.schemas";
@@ -2243,6 +2244,93 @@ export const useUploadMedia = <
   TContext
 > => {
   return useMutation(getUploadMediaMutationOptions(options));
+};
+
+/**
+ * @summary Update a media item (caption and/or mobility)
+ */
+export const getUpdateMediaUrl = (id: number) => {
+  return `/api/media/${id}`;
+};
+
+export const updateMedia = async (
+  id: number,
+  updateMediaBody: UpdateMediaBody,
+  options?: RequestInit,
+): Promise<Media> => {
+  return customFetch<Media>(getUpdateMediaUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateMediaBody),
+  });
+};
+
+export const getUpdateMediaMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMedia>>,
+    TError,
+    { id: number; data: BodyType<UpdateMediaBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateMedia>>,
+  TError,
+  { id: number; data: BodyType<UpdateMediaBody> },
+  TContext
+> => {
+  const mutationKey = ["updateMedia"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateMedia>>,
+    { id: number; data: BodyType<UpdateMediaBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateMedia(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateMediaMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateMedia>>
+>;
+export type UpdateMediaMutationBody = BodyType<UpdateMediaBody>;
+export type UpdateMediaMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update a media item (caption and/or mobility)
+ */
+export const useUpdateMedia = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateMedia>>,
+    TError,
+    { id: number; data: BodyType<UpdateMediaBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateMedia>>,
+  TError,
+  { id: number; data: BodyType<UpdateMediaBody> },
+  TContext
+> => {
+  return useMutation(getUpdateMediaMutationOptions(options));
 };
 
 /**

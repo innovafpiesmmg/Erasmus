@@ -25,7 +25,7 @@ export interface LoginBody {
 export interface AuthResponse {
   authenticated: boolean;
   username: string;
-  /** @nullable — null means full admin, a number means scoped to that partner */
+  /** @nullable */
   partnerId?: number | null;
 }
 
@@ -50,6 +50,10 @@ export interface Settings {
   siteTitle: string;
   projectName: string;
   projectDescription: string;
+  /** @nullable */
+  projectStartYear?: string | null;
+  /** @nullable */
+  projectEndYear?: string | null;
   heroTitle: string;
   heroSubtitle: string;
   email: string;
@@ -63,8 +67,6 @@ export interface Settings {
   socialTwitter?: string | null;
   /** @nullable */
   socialFacebook?: string | null;
-  projectStartYear: string;
-  projectEndYear: string;
   updatedAt: string;
 }
 
@@ -72,6 +74,10 @@ export interface UpdateSettingsBody {
   siteTitle?: string;
   projectName?: string;
   projectDescription?: string;
+  /** @nullable */
+  projectStartYear?: string | null;
+  /** @nullable */
+  projectEndYear?: string | null;
   heroTitle?: string;
   heroSubtitle?: string;
   email?: string;
@@ -85,8 +91,6 @@ export interface UpdateSettingsBody {
   socialTwitter?: string | null;
   /** @nullable */
   socialFacebook?: string | null;
-  projectStartYear?: string;
-  projectEndYear?: string;
 }
 
 export interface Partner {
@@ -221,6 +225,13 @@ export interface CreateMediaBody {
   /** @nullable */
   caption?: string | null;
   mediaType: CreateMediaBodyMediaType;
+  /** @nullable */
+  mobilityId?: number | null;
+}
+
+export interface UpdateMediaBody {
+  /** @nullable */
+  caption?: string | null;
   /** @nullable */
   mobilityId?: number | null;
 }

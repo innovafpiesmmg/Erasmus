@@ -26,6 +26,7 @@ export const AdminLoginBody = zod.object({
 export const AdminLoginResponse = zod.object({
   authenticated: zod.boolean(),
   username: zod.string(),
+  partnerId: zod.number().nullish(),
 });
 
 /**
@@ -41,6 +42,7 @@ export const AdminLogoutResponse = zod.object({
 export const GetAdminMeResponse = zod.object({
   authenticated: zod.boolean(),
   username: zod.string(),
+  partnerId: zod.number().nullish(),
 });
 
 /**
@@ -108,6 +110,8 @@ export const GetSettingsResponse = zod.object({
   siteTitle: zod.string(),
   projectName: zod.string(),
   projectDescription: zod.string(),
+  projectStartYear: zod.string().nullish(),
+  projectEndYear: zod.string().nullish(),
   heroTitle: zod.string(),
   heroSubtitle: zod.string(),
   email: zod.string(),
@@ -116,8 +120,6 @@ export const GetSettingsResponse = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
-  projectStartYear: zod.string(),
-  projectEndYear: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -128,6 +130,8 @@ export const UpdateSettingsBody = zod.object({
   siteTitle: zod.string().optional(),
   projectName: zod.string().optional(),
   projectDescription: zod.string().optional(),
+  projectStartYear: zod.string().nullish(),
+  projectEndYear: zod.string().nullish(),
   heroTitle: zod.string().optional(),
   heroSubtitle: zod.string().optional(),
   email: zod.string().optional(),
@@ -136,8 +140,6 @@ export const UpdateSettingsBody = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
-  projectStartYear: zod.string().optional(),
-  projectEndYear: zod.string().optional(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -145,6 +147,8 @@ export const UpdateSettingsResponse = zod.object({
   siteTitle: zod.string(),
   projectName: zod.string(),
   projectDescription: zod.string(),
+  projectStartYear: zod.string().nullish(),
+  projectEndYear: zod.string().nullish(),
   heroTitle: zod.string(),
   heroSubtitle: zod.string(),
   email: zod.string(),
@@ -153,8 +157,6 @@ export const UpdateSettingsResponse = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
-  projectStartYear: zod.string(),
-  projectEndYear: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -316,6 +318,7 @@ export const GetMobilitiesResponseItem = zod
         lng: zod.number(),
         webUrl: zod.string().nullish(),
         logoUrl: zod.string().nullish(),
+        photoUrl: zod.string().nullish(),
         socialInstagram: zod.string().nullish(),
         socialTwitter: zod.string().nullish(),
         isCoordinator: zod.boolean(),
@@ -369,6 +372,7 @@ export const GetMobilityResponse = zod
         lng: zod.number(),
         webUrl: zod.string().nullish(),
         logoUrl: zod.string().nullish(),
+        photoUrl: zod.string().nullish(),
         socialInstagram: zod.string().nullish(),
         socialTwitter: zod.string().nullish(),
         isCoordinator: zod.boolean(),
@@ -540,6 +544,27 @@ export const UploadMediaBody = zod.object({
     .describe("Image file to upload (JPEG, PNG, GIF, WebP — max 20 MB)"),
   caption: zod.string().nullish(),
   mobilityId: zod.number().nullish(),
+});
+
+/**
+ * @summary Update a media item (caption and/or mobility)
+ */
+export const UpdateMediaParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateMediaBody = zod.object({
+  caption: zod.string().nullish(),
+  mobilityId: zod.number().nullish(),
+});
+
+export const UpdateMediaResponse = zod.object({
+  id: zod.number(),
+  url: zod.string(),
+  caption: zod.string().nullish(),
+  mediaType: zod.enum(["image"]),
+  mobilityId: zod.number().nullish(),
+  createdAt: zod.string(),
 });
 
 /**
