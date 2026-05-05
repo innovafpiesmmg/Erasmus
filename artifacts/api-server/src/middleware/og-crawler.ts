@@ -1,6 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { eq } from "drizzle-orm";
-import { db, mobilitiesTable, partnersTable } from "@workspace/db";
+import { db, mobilitiesTable, partnersTable, activitiesTable } from "@workspace/db";
 
 const CRAWLER_PATTERNS = [
   /facebookexternalhit/i,
@@ -36,7 +36,7 @@ function toAbsoluteUrl(url: string | null | undefined, siteUrl: string): string 
   return `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
 }
 
-function buildOgHtml(
+function buildMobilityOgHtml(
   mobility: { theme: string; description: string | null; headerImageUrl: string | null; partner: { name: string } | null },
   id: number,
   siteUrl: string
@@ -47,6 +47,41 @@ function buildOgHtml(
     : `Movilidad Erasmus+ en ${mobility.partner?.name ?? "destino internacional"}`;
   const image = toAbsoluteUrl(mobility.headerImageUrl, siteUrl);
   const url = `${siteUrl}/movilidades/${id}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(title)}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Erasmus+ Platform" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(url)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(url)}" />
+  </head>
+  <body>
+    <p>Redirigiendo a <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
+  </body>
+</html>`;
+}
+
+function buildActivityOgHtml(
+  activity: { title: string; description: string | null; imageUrl: string | null },
+  id: number,
+  siteUrl: string
+): string {
+  const title = `${activity.title} — Erasmus+ Platform`;
+  const description = activity.description
+    ? activity.description.slice(0, 160)
+    : "Actividad Erasmus+";
+  const image = toAbsoluteUrl(activity.imageUrl, siteUrl);
+  const url = `${siteUrl}/actividades/${id}`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -84,47 +119,83 @@ export async function ogCrawlerMiddleware(
 ): Promise<void> {
   const ua = req.headers["user-agent"] ?? "";
   const urlPath = req.path;
-  const match = urlPath.match(/^\/movilidades\/(\d+)$/);
 
-  if (!match || !isCrawler(ua)) {
+  if (!isCrawler(ua)) {
     return next();
   }
 
-  const id = Number(match[1]);
+  const mobilityMatch = urlPath.match(/^\/movilidades\/(\d+)$/);
+  const activityMatch = urlPath.match(/^\/actividades\/(\d+)$/);
+
+  if (!mobilityMatch && !activityMatch) {
+    return next();
+  }
+
+  const siteUrl = getSiteUrl(req);
 
   try {
-    const mobility = await db
-      .select()
-      .from(mobilitiesTable)
-      .where(eq(mobilitiesTable.id, id))
-      .limit(1);
+    if (mobilityMatch) {
+      const id = Number(mobilityMatch[1]);
 
-    if (!mobility.length) {
-      return next();
+      const mobility = await db
+        .select()
+        .from(mobilitiesTable)
+        .where(eq(mobilitiesTable.id, id))
+        .limit(1);
+
+      if (!mobility.length) {
+        return next();
+      }
+
+      const partner = await db
+        .select()
+        .from(partnersTable)
+        .where(eq(partnersTable.id, mobility[0].partnerId))
+        .limit(1);
+
+      const html = buildMobilityOgHtml(
+        {
+          theme: mobility[0].theme,
+          description: mobility[0].description ?? null,
+          headerImageUrl: mobility[0].headerImageUrl ?? null,
+          partner: partner[0] ? { name: partner[0].name } : null,
+        },
+        id,
+        siteUrl
+      );
+
+      res.status(200)
+        .set("Content-Type", "text/html; charset=utf-8")
+        .set("Cache-Control", "public, max-age=300, s-maxage=300")
+        .end(html);
+    } else {
+      const id = Number(activityMatch![1]);
+
+      const activity = await db
+        .select()
+        .from(activitiesTable)
+        .where(eq(activitiesTable.id, id))
+        .limit(1);
+
+      if (!activity.length) {
+        return next();
+      }
+
+      const html = buildActivityOgHtml(
+        {
+          title: activity[0].title,
+          description: activity[0].description ?? null,
+          imageUrl: activity[0].imageUrl ?? null,
+        },
+        id,
+        siteUrl
+      );
+
+      res.status(200)
+        .set("Content-Type", "text/html; charset=utf-8")
+        .set("Cache-Control", "public, max-age=300, s-maxage=300")
+        .end(html);
     }
-
-    const partner = await db
-      .select()
-      .from(partnersTable)
-      .where(eq(partnersTable.id, mobility[0].partnerId))
-      .limit(1);
-
-    const siteUrl = getSiteUrl(req);
-    const html = buildOgHtml(
-      {
-        theme: mobility[0].theme,
-        description: mobility[0].description ?? null,
-        headerImageUrl: mobility[0].headerImageUrl ?? null,
-        partner: partner[0] ? { name: partner[0].name } : null,
-      },
-      id,
-      siteUrl
-    );
-
-    res.status(200)
-      .set("Content-Type", "text/html; charset=utf-8")
-      .set("Cache-Control", "public, max-age=300, s-maxage=300")
-      .end(html);
   } catch {
     next();
   }
