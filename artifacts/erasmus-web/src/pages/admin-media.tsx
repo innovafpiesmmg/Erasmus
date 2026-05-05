@@ -142,6 +142,7 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
               <input
                 value={uploadCaption}
                 onChange={(e) => setUploadCaption(e.target.value)}
+                data-testid="input-upload-caption"
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
                 placeholder="Opcional"
               />
@@ -152,6 +153,7 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
               <select
                 value={uploadMobilityId}
                 onChange={(e) => setUploadMobilityId(e.target.value)}
+                data-testid="select-upload-mobility"
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
               >
                 <option value="">Sin asociar</option>
@@ -229,11 +231,14 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
 
 export default function AdminMedia() {
   const { data: media = [], isLoading } = useGetMedia();
+  const { data: mobilities = [] } = useGetMobilities();
   const qc = useQueryClient();
   const deleteMedia = useDeleteMedia({
     mutation: { onSuccess: () => qc.invalidateQueries({ queryKey: getGetMediaQueryKey() }) },
   });
   const [showModal, setShowModal] = useState(false);
+
+  const mobilityMap = Object.fromEntries(mobilities.map((m) => [m.id, m]));
 
   return (
     <AdminLayout>
@@ -264,25 +269,35 @@ export default function AdminMedia() {
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {media.map((m) => (
-            <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
-              <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                <button
-                  onClick={() => { if (confirm("¿Eliminar este archivo?")) deleteMedia.mutate({ id: m.id }); }}
-                  data-testid={`button-delete-media-${m.id}`}
-                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </div>
-              {m.caption && (
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
-                  <p className="text-white text-xs truncate">{m.caption}</p>
+          {media.map((m) => {
+            const linkedMobility = m.mobilityId != null ? mobilityMap[m.mobilityId] : null;
+            return (
+              <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
+                <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                  <button
+                    onClick={() => { if (confirm("¿Eliminar este archivo?")) deleteMedia.mutate({ id: m.id }); }}
+                    data-testid={`button-delete-media-${m.id}`}
+                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+                {linkedMobility && (
+                  <div className="absolute top-2 left-2" data-testid={`media-mobility-badge-${m.id}`}>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#003399]/90 text-white backdrop-blur-sm truncate max-w-[120px]">
+                      {linkedMobility.theme}
+                    </span>
+                  </div>
+                )}
+                {m.caption && (
+                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                    <p className="text-white text-xs truncate">{m.caption}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 

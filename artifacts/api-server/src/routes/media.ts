@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { eq } from "drizzle-orm";
-import { db, mediaTable } from "@workspace/db";
+import { db, mediaTable, mobilitiesTable } from "@workspace/db";
 import { CreateMediaBody, DeleteMediaParams } from "@workspace/api-zod";
 import multer from "multer";
 import path from "path";
@@ -39,6 +39,15 @@ const upload = multer({
   },
 });
 
+async function validateMobilityId(mobilityId: number): Promise<boolean> {
+  const rows = await db
+    .select({ id: mobilitiesTable.id })
+    .from(mobilitiesTable)
+    .where(eq(mobilitiesTable.id, mobilityId))
+    .limit(1);
+  return rows.length > 0;
+}
+
 const router: IRouter = Router();
 
 router.get("/media", async (req: Request, res: Response) => {
@@ -62,7 +71,24 @@ router.post("/media/upload", upload.single("file"), async (req: Request, res: Re
     const fileUrl = `/uploads/${req.file.filename}`;
     const mediaType = "image";
     const caption = typeof req.body.caption === "string" ? req.body.caption || null : null;
-    const mobilityId = req.body.mobilityId ? Number(req.body.mobilityId) : null;
+    const rawMobilityId = req.body.mobilityId;
+    const mobilityId = rawMobilityId != null && rawMobilityId !== ""
+      ? Number(rawMobilityId)
+      : null;
+
+    if (mobilityId !== null) {
+      if (!Number.isInteger(mobilityId) || mobilityId <= 0) {
+        fs.unlink(req.file.path, () => {});
+        res.status(400).json({ error: "Invalid mobilityId" });
+        return;
+      }
+      const exists = await validateMobilityId(mobilityId);
+      if (!exists) {
+        fs.unlink(req.file.path, () => {});
+        res.status(400).json({ error: "Mobility not found" });
+        return;
+      }
+    }
 
     const inserted = await db
       .insert(mediaTable)
@@ -81,6 +107,16 @@ router.post("/media", async (req, res) => {
       res.status(400).json({ error: "Invalid request body" });
       return;
     }
+
+    const { mobilityId } = parsed.data;
+    if (mobilityId != null) {
+      const exists = await validateMobilityId(mobilityId);
+      if (!exists) {
+        res.status(400).json({ error: "Mobility not found" });
+        return;
+      }
+    }
+
     const inserted = await db.insert(mediaTable).values(parsed.data).returning();
     res.status(201).json(inserted[0]);
   } catch {
