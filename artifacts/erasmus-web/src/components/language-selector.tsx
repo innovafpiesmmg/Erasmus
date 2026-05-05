@@ -14,41 +14,72 @@ const STORAGE_KEY = "sea_lang";
 
 function getCookieLang(): string | null {
   const m = document.cookie.match(/googtrans=\/es\/([a-z]+)/);
-  return m ? m[1] : null;
+  if (!m || m[1] === "es") return null;
+  return m[1];
+}
+
+/** Poll until the hidden GT combo is in the DOM (up to 10 s) */
+function waitForGTCombo(timeoutMs = 10_000): Promise<HTMLSelectElement | null> {
+  return new Promise((resolve) => {
+    const immediate = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+    if (immediate) { resolve(immediate); return; }
+
+    const deadline = Date.now() + timeoutMs;
+    const id = setInterval(() => {
+      const sel = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+      if (sel || Date.now() > deadline) {
+        clearInterval(id);
+        resolve(sel ?? null);
+      }
+    }, 200);
+  });
 }
 
 function clearGTCookies() {
   const exp = new Date(0).toUTCString();
   const host = window.location.hostname;
-  // Delete all domain variants that Google Translate may have set
-  for (const domain of ["", host, `.${host}`]) {
-    const domainPart = domain ? `; domain=${domain}` : "";
-    document.cookie = `googtrans=; expires=${exp}; path=/${domainPart}`;
-    document.cookie = `googtrans=; expires=${exp}; path=/; SameSite=None; Secure${domainPart}`;
+  const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
+  const domains = isIP ? [""] : ["", host, `.${host}`];
+  for (const d of domains) {
+    const dp = d ? `; domain=${d}` : "";
+    document.cookie = `googtrans=; expires=${exp}; path=/${dp}`;
   }
 }
 
-function applyTranslation(code: string) {
+async function applyTranslation(code: string) {
   if (code === "es") {
-    // Clear every known cookie variant so GT doesn't re-apply on reload
-    clearGTCookies();
     localStorage.removeItem(STORAGE_KEY);
-    window.location.reload();
+
+    const select = await waitForGTCombo();
+    if (select) {
+      // Setting to "" triggers GT's built-in "restore original" path
+      select.value = "";
+      select.dispatchEvent(new Event("change"));
+      // Also wipe the cookie so a future reload starts clean
+      clearGTCookies();
+    } else {
+      // Widget never loaded — clear cookies and hard reload
+      clearGTCookies();
+      window.location.reload();
+    }
     return;
   }
 
-  // Try via the hidden Google Translate combo box (already loaded)
-  const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
+  localStorage.setItem(STORAGE_KEY, code);
+
+  const select = await waitForGTCombo();
   if (select) {
     select.value = code;
     select.dispatchEvent(new Event("change"));
-    localStorage.setItem(STORAGE_KEY, code);
   } else {
-    // Widget not ready yet — set cookie and reload
+    // Fallback: set cookie + reload (autoDisplay:false won't fire, but at least
+    // state is persisted for the next full page load if the user refreshes)
     const host = window.location.hostname;
+    const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
     document.cookie = `googtrans=/es/${code}; path=/`;
-    document.cookie = `googtrans=/es/${code}; path=/; domain=.${host}`;
-    localStorage.setItem(STORAGE_KEY, code);
+    if (!isIP) {
+      document.cookie = `googtrans=/es/${code}; path=/; domain=.${host}`;
+    }
     window.location.reload();
   }
 }
@@ -61,9 +92,18 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
   useEffect(() => {
     const cookieLang = getCookieLang();
     const stored = localStorage.getItem(STORAGE_KEY);
-    const active = cookieLang ?? stored ?? "es";
-    setCurrent(active);
+    setCurrent(cookieLang ?? stored ?? "es");
   }, []);
+
+  // Re-apply translation after SPA navigation (React re-renders new DOM nodes)
+  useEffect(() => {
+    if (current === "es") return;
+    waitForGTCombo().then((select) => {
+      if (!select || select.value === current) return;
+      select.value = current;
+      select.dispatchEvent(new Event("change"));
+    });
+  }, [current]);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -81,9 +121,6 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
     ? "text-white/80 hover:text-white hover:bg-white/10"
     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100";
 
-  const dropdownBase =
-    "absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden";
-
   return (
     <div ref={ref} className="relative">
       <button
@@ -97,14 +134,14 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
       </button>
 
       {open && (
-        <div className={dropdownBase}>
+        <div className="absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden">
           {LANGUAGES.map((lang) => (
             <button
               key={lang.code}
               onClick={() => {
                 setOpen(false);
                 setCurrent(lang.code);
-                applyTranslation(lang.code);
+                void applyTranslation(lang.code);
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left ${
                 current === lang.code
