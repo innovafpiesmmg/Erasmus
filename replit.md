@@ -122,12 +122,26 @@ The Vite dev server proxies `/api` requests to `http://localhost:8080` (or `$API
 
 ---
 
+## Social Media / Open Graph
+
+Mobility detail pages (`/movilidades/:id`) serve rich OG meta tags to social media crawlers via a **two-layer middleware**:
+
+1. **Development** — `artifacts/erasmus-web/og-crawler-plugin.ts` adds middleware to the Vite dev/preview server. Detects crawler user-agents, fetches mobility data from the API, and returns a minimal HTML page with `og:title`, `og:description`, `og:image`, `twitter:card`, etc.
+
+2. **Production** — `artifacts/api-server/src/middleware/og-crawler.ts` is mounted on Express before the `/api` routes. Queries the DB directly and returns the same OG HTML without needing the Vite server.
+
+Both layers use `/opengraph.jpg` as a fallback `og:image` when the mobility has no `headerImageUrl`. Detected crawler UA patterns: `facebookexternalhit`, `Twitterbot`, `LinkedInBot`, `WhatsApp`, `TelegramBot`, `Slackbot`, `Googlebot`, `bingbot`, `Discordbot`, `Applebot`.
+
+---
+
 ## Key Files
 
 - `lib/api-spec/openapi.yaml` — Full API spec
 - `lib/api-spec/orval.config.ts` — Orval codegen config
-- `artifacts/api-server/src/app.ts` — Express app setup (cors, cookieParser, /api mount)
+- `artifacts/api-server/src/app.ts` — Express app setup (cors, cookieParser, OG middleware, /api mount)
+- `artifacts/api-server/src/middleware/og-crawler.ts` — Production OG crawler middleware (queries DB directly)
 - `artifacts/api-server/src/routes/` — All route handlers
+- `artifacts/erasmus-web/og-crawler-plugin.ts` — Vite plugin for dev/preview OG crawler middleware
 - `artifacts/erasmus-web/src/App.tsx` — React router (wouter)
 - `artifacts/erasmus-web/src/pages/` — All page components
 - `artifacts/erasmus-web/src/components/admin-layout.tsx` — Admin sidebar layout
