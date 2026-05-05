@@ -12,77 +12,51 @@ const LANGUAGES = [
 
 const STORAGE_KEY = "sea_lang";
 
-function getCookieLang(): string | null {
+/** Read the active language from the googtrans cookie GT sets/reads. */
+function getActiveLang(): string {
   const m = document.cookie.match(/googtrans=\/es\/([a-z]+)/);
-  if (!m || m[1] === "es") return null;
-  return m[1];
+  if (m && m[1] && m[1] !== "es") return m[1];
+  return localStorage.getItem(STORAGE_KEY) ?? "es";
 }
 
-/** Always queries fresh — never caches a stale reference after GT re-renders */
-function getGTCombo(): HTMLSelectElement | null {
-  return document.querySelector<HTMLSelectElement>(".goog-te-combo");
+/**
+ * Write the googtrans cookie for all domain variants so GT picks it up.
+ * GT reads this cookie on page load and auto-translates when autoDisplay
+ * is not set to false.
+ */
+function setGoogTrans(value: string) {
+  const host = window.location.hostname;
+  const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
+  // Bare cookie (always works, including IP addresses)
+  document.cookie = `googtrans=${value}; path=/`;
+  if (!isIP) {
+    document.cookie = `googtrans=${value}; path=/; domain=${host}`;
+    document.cookie = `googtrans=${value}; path=/; domain=.${host}`;
+  }
 }
 
-/** Fire a change event the same way GT's own internal code does */
-function fireGTChange(select: HTMLSelectElement) {
-  const evt = document.createEvent("HTMLEvents");
-  evt.initEvent("change", true, true); // bubbles=true, cancelable=true
-  select.dispatchEvent(evt);
-}
-
-/** Poll until .goog-te-combo appears in the DOM (up to timeoutMs) */
-function waitForGTCombo(timeoutMs = 10_000): Promise<boolean> {
-  return new Promise((resolve) => {
-    if (getGTCombo()) { resolve(true); return; }
-    const deadline = Date.now() + timeoutMs;
-    const id = setInterval(() => {
-      if (getGTCombo() || Date.now() > deadline) {
-        clearInterval(id);
-        resolve(!!getGTCombo());
-      }
-    }, 200);
-  });
-}
-
-function clearGTCookies() {
+function clearGoogTrans() {
   const exp = new Date(0).toUTCString();
   const host = window.location.hostname;
   const isIP = /^\d+\.\d+\.\d+\.\d+$/.test(host) || host === "localhost";
-  for (const d of isIP ? [""] : ["", host, `.${host}`]) {
-    const dp = d ? `; domain=${d}` : "";
-    document.cookie = `googtrans=; expires=${exp}; path=/${dp}`;
+  document.cookie = `googtrans=; expires=${exp}; path=/`;
+  if (!isIP) {
+    document.cookie = `googtrans=; expires=${exp}; path=/; domain=${host}`;
+    document.cookie = `googtrans=; expires=${exp}; path=/; domain=.${host}`;
   }
 }
 
-async function applyTranslation(code: string, attempt = 0) {
-  const targetValue = code === "es" ? "" : code; // "" = "Select Language" (GT restore)
-
+function switchLanguage(code: string) {
   if (code === "es") {
-    clearGTCookies();
+    clearGoogTrans();
     localStorage.removeItem(STORAGE_KEY);
   } else {
+    setGoogTrans(`/es/${code}`);
     localStorage.setItem(STORAGE_KEY, code);
   }
-
-  const ready = await waitForGTCombo(10_000);
-  if (!ready) {
-    // Widget never loaded — reload page as last resort
-    window.location.reload();
-    return;
-  }
-
-  const select = getGTCombo();
-  if (!select) {
-    // Combo disappeared between check and use — retry up to 3 times
-    if (attempt < 3) {
-      await new Promise((r) => setTimeout(r, 300));
-      return applyTranslation(code, attempt + 1);
-    }
-    return;
-  }
-
-  select.value = targetValue;
-  fireGTChange(select);
+  // Reload so GT reads the cookie on a clean page load and auto-translates.
+  // This works because autoDisplay is no longer set to false in index.html.
+  window.location.reload();
 }
 
 export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
@@ -90,22 +64,16 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
   const [current, setCurrent] = useState("es");
   const ref = useRef<HTMLDivElement>(null);
 
-  // Read active language once on mount
   useEffect(() => {
-    const cookieLang = getCookieLang();
-    const stored = localStorage.getItem(STORAGE_KEY);
-    setCurrent(cookieLang ?? stored ?? "es");
+    setCurrent(getActiveLang());
   }, []);
 
-  // Close dropdown on outside click
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+    function onOutsideClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("mousedown", onOutsideClick);
+    return () => document.removeEventListener("mousedown", onOutsideClick);
   }, []);
 
   const currentLang = LANGUAGES.find((l) => l.code === current) ?? LANGUAGES[0];
@@ -133,8 +101,7 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
               key={lang.code}
               onClick={() => {
                 setOpen(false);
-                setCurrent(lang.code);
-                void applyTranslation(lang.code);
+                switchLanguage(lang.code);
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors text-left ${
                 current === lang.code

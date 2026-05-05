@@ -15,11 +15,17 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Google Translate widget (hidden, driven by LanguageSelector component) -->
+    <!-- Suppress Google Translate toolbar before app CSS loads (prevents flash) -->
+    <style>
+      .goog-te-banner-frame, .skiptranslate, #goog-gt-tt,
+      .goog-tooltip, .goog-te-balloon-frame { display: none !important; }
+      body { top: 0 !important; }
+    </style>
+    <!-- Google Translate widget — autoDisplay omitted so GT reads googtrans cookie on load -->
     <script>
       window.googleTranslateElementInit = function () {
         new window.google.translate.TranslateElement(
-          { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk', autoDisplay: false },
+          { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk' },
           'google_translate_element'
         );
       };
