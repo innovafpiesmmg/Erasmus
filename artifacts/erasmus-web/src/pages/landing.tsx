@@ -34,8 +34,8 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
     >
       {/* Hero background photo */}
       <div className="absolute inset-0" style={{ backgroundImage: "url('/hero-erasmus.png')", backgroundSize: "cover", backgroundPosition: "center top" }} />
-      {/* Dark overlay for text readability, with subtle brand colour tint */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(160deg, rgba(0,26,110,0.72) 0%, rgba(0,10,50,0.65) 50%, rgba(30,60,20,0.70) 100%)" }} />
+      {/* Overlay: light tint at top, slightly denser at bottom for text readability */}
+      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,20,80,0.30) 0%, rgba(0,10,50,0.55) 70%, rgba(0,10,50,0.70) 100%)" }} />
 
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
         <motion.div
