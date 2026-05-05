@@ -1,0 +1,68 @@
+root@erasmus:/var/www/sea-erasmus# cd /var/www/sea-erasmus
+sudo rm -f update.sh        # eliminar el update.sh antiguo si aún existe
+sudo git pull               # obtener el código nuevo con el arreglo
+sudo bash update.sh         # actualizar: compila + sincroniza BD + reinicia
+remote: Enumerating objects: 6, done.
+remote: Counting objects: 100% (6/6), done.
+remote: Compressing objects: 100% (2/2), done.
+remote: Total 4 (delta 2), reused 4 (delta 2), pack-reused 0 (from 0)
+Unpacking objects: 100% (4/4), 88.16 KiB | 663.00 KiB/s, done.
+From https://github.com/innovafpiesmmg/Erasmus
+   b017661..d0b1480  main       -> origin/main
+Updating b017661..d0b1480
+Fast-forward
+ attached_assets/image_1777977643799.png | Bin 0 -> 119138 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ create mode 100644 attached_assets/image_1777977643799.png
+bash: update.sh: No such file or directory
+root@erasmus:/var/www/sea-erasmus# sudo bash update.sh         # actualizar: compila + sincroniza BD + reinicia
+bash: update.sh: No such file or directory
+root@erasmus:/var/www/sea-erasmus# sudo bash /var/www/sea-erasmus/update.sh
+bash: /var/www/sea-erasmus/update.sh: No such file or directory
+root@erasmus:/var/www/sea-erasmus# cd /var/www/sea-erasmus && sudo git pull && sudo bash update.sh
+remote: Enumerating objects: 112, done.
+remote: Counting objects: 100% (112/112), done.
+remote: Compressing objects: 100% (33/33), done.
+remote: Total 71 (delta 41), reused 68 (delta 38), pack-reused 0 (from 0)
+Unpacking objects: 100% (71/71), 395.07 KiB | 1.39 MiB/s, done.
+From https://github.com/innovafpiesmmg/Erasmus
+   d0b1480..0b66c0e  main       -> origin/main
+Updating d0b1480..0b66c0e
+Fast-forward
+ artifacts/api-server/package.json                          |   2 +
+ artifacts/api-server/src/app.ts                            |  14 ++++
+ artifacts/api-server/src/middleware/og-crawler.ts          | 131 +++++++++++++++++++++++++++++
+ artifacts/api-server/src/middleware/require-admin.ts       |  28 +++++++
+ artifacts/api-server/src/routes/activities.ts              |  86 +++++++++++++++++--
+ artifacts/api-server/src/routes/admins.ts                  | 156 ++++++++++++++++++++++++++++++++++
+ artifacts/api-server/src/routes/auth.ts                    |  70 ++++++++++++----
+ artifacts/api-server/src/routes/index.ts                   |   5 +-
+ artifacts/api-server/src/routes/mobilities.ts              |  43 ++++++++--
+ artifacts/api-server/src/routes/partners.ts                |  31 ++++++-
+ artifacts/erasmus-web/index.html                           |  12 +++
+ artifacts/erasmus-web/og-crawler-plugin.ts                 | 152 +++++++++++++++++++++++++++++++++
+ artifacts/erasmus-web/public/opengraph.jpg                 | Bin 127716 -> 127675 bytes
+ artifacts/erasmus-web/src/App.tsx                          |   2 +
+ artifacts/erasmus-web/src/components/admin-layout.tsx      |  26 +++++-
+ artifacts/erasmus-web/src/components/language-selector.tsx | 113 +++++++++++++++++++++++++
+ artifacts/erasmus-web/src/components/public-header.tsx     |   3 +
+ artifacts/erasmus-web/src/index.css                        |  11 +++
+ artifacts/erasmus-web/src/pages/activity-detail.tsx        | 100 +++++++++++++++++++++-
+ artifacts/erasmus-web/src/pages/admin-media.tsx            |  46 +++++++---
+ artifacts/erasmus-web/src/pages/admin-users.tsx            | 409 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ artifacts/erasmus-web/src/pages/landing.tsx                |   4 +-
+ artifacts/erasmus-web/vite.config.ts                       |   2 +
+ install.sh                                                 |  13 +++
+ lib/api-client-react/src/generated/api.schemas.ts          |   2 +
+ lib/db/src/schema/admins.ts                                |  12 +++
+ lib/db/src/schema/index.ts                                 |   1 +
+ pnpm-lock.yaml                                             |  20 +++++
+ replit.md                                                  |  16 +++-
+ 29 files changed, 1457 insertions(+), 53 deletions(-)
+ create mode 100644 artifacts/api-server/src/middleware/og-crawler.ts
+ create mode 100644 artifacts/api-server/src/routes/admins.ts
+ create mode 100644 artifacts/erasmus-web/og-crawler-plugin.ts
+ create mode 100644 artifacts/erasmus-web/src/components/language-selector.tsx
+ create mode 100644 artifacts/erasmus-web/src/pages/admin-users.tsx
+ create mode 100644 lib/db/src/schema/admins.ts
+bash: update.sh: No such file or directory
