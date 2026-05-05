@@ -123,7 +123,9 @@ async function applyLanguage(code: string): Promise<boolean> {
 
 export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
   const [open, setOpen] = useState(false);
-  const [current, setCurrent] = useState<string>(() => localStorage.getItem(STORAGE_KEY) ?? "es");
+  // Always start as Spanish — the indicator only shows a non-Spanish language
+  // AFTER GT has actually applied the translation, so it never lies.
+  const [current, setCurrent] = useState<string>("es");
   const [applying, setApplying] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -139,10 +141,22 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
     return Array.from(codes).map((c) => ({ code: c, ...LANG_META[c] }));
   }, [partners]);
 
-  // Restore saved language on mount
+  // Restore saved language on mount, but only update the indicator AFTER
+  // GT actually applied the translation. If apply fails, clear the stale
+  // localStorage so the next refresh starts cleanly in Spanish.
   useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY) ?? "es";
-    if (saved !== "es") applyLanguage(saved);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved || saved === "es") return;
+
+    setApplying(true);
+    applyLanguage(saved).then((ok) => {
+      if (ok) {
+        setCurrent(saved);
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+      setApplying(false);
+    });
   }, []);
 
   // Close dropdown on outside click
