@@ -63,10 +63,47 @@ interface MobilityData {
   partner?: { name?: string } | null;
 }
 
+interface ActivityData {
+  title?: string;
+  description?: string | null;
+  imageUrl?: string | null;
+}
+
 function toAbsoluteUrl(url: string | null | undefined, siteUrl: string): string {
   if (!url) return `${siteUrl}/opengraph.jpg`;
   if (/^https?:\/\//i.test(url)) return url;
   return `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function buildActivityOgHtml(activity: ActivityData, id: string, siteUrl: string): string {
+  const title = `${activity.title ?? "Actividad Erasmus+"} — Erasmus+ Platform`;
+  const description = activity.description
+    ? activity.description.slice(0, 160)
+    : "Actividad Erasmus+";
+  const image = toAbsoluteUrl(activity.imageUrl, siteUrl);
+  const url = `${siteUrl}/actividades/${id}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(title)}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Erasmus+ Platform" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(url)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(url)}" />
+  </head>
+  <body>
+    <p>Redirigiendo a <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
+  </body>
+</html>`;
 }
 
 function buildOgHtml(mobility: MobilityData, id: string, siteUrl: string): string {
@@ -110,22 +147,38 @@ function createCrawlerMiddleware(apiPort: string): ConnectMiddleware {
   return async (req, res, next) => {
     const ua = (req.headers["user-agent"] as string) ?? "";
     const urlPath = (req.url ?? "").split("?")[0];
-    const match = urlPath.match(/^\/movilidades\/(\d+)$/);
 
-    if (!match || !isCrawler(ua)) {
+    if (!isCrawler(ua)) {
       return next();
     }
 
-    const id = match[1];
+    const mobilityMatch = urlPath.match(/^\/movilidades\/(\d+)$/);
+    const activityMatch = urlPath.match(/^\/actividades\/(\d+)$/);
+
+    if (!mobilityMatch && !activityMatch) {
+      return next();
+    }
+
+    const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "localhost";
+    const proto = (req.headers["x-forwarded-proto"] as string) || "https";
+    const siteUrl = `${proto}://${host}`;
 
     try {
-      const mobility = await fetchJson(
-        `http://localhost:${apiPort}/api/mobilities/${id}`
-      );
-      const host = (req.headers["x-forwarded-host"] as string) || req.headers.host || "localhost";
-      const proto = (req.headers["x-forwarded-proto"] as string) || "https";
-      const siteUrl = `${proto}://${host}`;
-      const html = buildOgHtml(mobility as MobilityData, id, siteUrl);
+      let html: string;
+
+      if (mobilityMatch) {
+        const id = mobilityMatch[1];
+        const mobility = await fetchJson(
+          `http://localhost:${apiPort}/api/mobilities/${id}`
+        );
+        html = buildOgHtml(mobility as MobilityData, id, siteUrl);
+      } else {
+        const id = activityMatch![1];
+        const activity = await fetchJson(
+          `http://localhost:${apiPort}/api/activities/${id}`
+        );
+        html = buildActivityOgHtml(activity as ActivityData, id, siteUrl);
+      }
 
       res.statusCode = 200;
       res.setHeader("Content-Type", "text/html; charset=utf-8");
