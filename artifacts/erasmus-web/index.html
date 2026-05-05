@@ -22,8 +22,39 @@
       body { top: 0 !important; }
     </style>
     <!-- Google Translate widget: autoDisplay:false = GT does NOT auto-translate.
-         Language is applied programmatically by LanguageSelector via the combo element. -->
+         Language is applied programmatically by LanguageSelector via the combo element.
+         IMPORTANT: GT persists its own `googtrans` cookie across reloads, independently
+         of our localStorage. If we don't clear it when no language is saved, GT will
+         silently re-translate the page on the next load while our selector still says
+         "Español". So: before GT loads, sync up the cookie with our localStorage. -->
     <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('sea_lang');
+          if (!saved || saved === 'es') {
+            // Clear googtrans cookie on every plausible domain/path combination.
+            var host = location.hostname;
+            var parts = host.split('.');
+            var domains = ['', host, '.' + host];
+            for (var i = 1; i < parts.length; i++) {
+              domains.push('.' + parts.slice(i).join('.'));
+            }
+            var paths = ['/', location.pathname];
+            var names = ['googtrans', 'GOOGTRANS'];
+            for (var n = 0; n < names.length; n++) {
+              for (var p = 0; p < paths.length; p++) {
+                for (var d = 0; d < domains.length; d++) {
+                  document.cookie = names[n] + '=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=' + paths[p] + (domains[d] ? '; domain=' + domains[d] : '');
+                }
+              }
+            }
+          } else {
+            // Pre-set the cookie so GT applies the saved language on first paint
+            // (avoids the brief Spanish flash before LanguageSelector runs).
+            document.cookie = 'googtrans=/es/' + saved + '; path=/';
+          }
+        } catch (e) { /* localStorage may be unavailable in some embeds */ }
+      })();
       window.googleTranslateElementInit = function () {
         new window.google.translate.TranslateElement(
           { pageLanguage: 'es', includedLanguages: 'tr,lv,ro,pt,mk,fr,it,de,pl,el,nl,hr,bg,hu,cs,sk,sl,et,lt,fi,sv,da,no,en,ga,sq,sr,uk,ru,ca,eu,gl', autoDisplay: false },
