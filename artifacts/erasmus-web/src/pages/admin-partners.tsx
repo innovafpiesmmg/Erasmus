@@ -22,7 +22,7 @@ const partnerSchema = z.object({
   lng: z.coerce.number().min(-180).max(180),
   webUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
   logoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")).or(z.string().startsWith("/uploads/")),
-  photoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  photoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")).or(z.string().startsWith("/uploads/")),
   socialInstagram: z.string().optional().nullable(),
   socialTwitter: z.string().optional().nullable(),
   isCoordinator: z.boolean().default(false),
