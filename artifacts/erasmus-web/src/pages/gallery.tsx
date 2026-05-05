@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Camera, MapPin, Calendar, ChevronRight, ImageOff, Play, X, Globe2 } from "lucide-react";
 import PublicHeader from "@/components/public-header";
 import PhotoLightbox from "@/components/photo-lightbox";
+import VideoThumbnail from "@/components/video-thumbnail";
 
 const WP_COLORS: Record<string, string> = {
   WP2: "#003399",
@@ -148,12 +149,10 @@ function MobilityGallerySection({
               data-testid={`gallery-photo-${m.id}`}
             >
               {isVideo ? (
-                <video
-                  src={m.url}
+                <VideoThumbnail
+                  url={m.url}
+                  caption={m.caption}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  preload="metadata"
-                  muted
-                  playsInline
                 />
               ) : (
                 <img

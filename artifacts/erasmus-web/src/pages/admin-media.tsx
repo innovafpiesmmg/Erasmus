@@ -6,13 +6,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Plus, Trash2, Image, X, Upload, Link, Pencil, Play, Film } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
+import VideoThumbnail from "@/components/video-thumbnail";
+import { getVideoEmbedInfo, isDirectVideoFile } from "@/lib/video-embed";
 
-const urlSchema = z.object({
-  url: z.string().url("URL inválida"),
-  mediaType: z.enum(["image", "video"]),
-  caption: z.string().optional().nullable(),
-  mobilityId: z.coerce.number().optional().nullable(),
-});
+const urlSchema = z
+  .object({
+    url: z.string().url("URL inválida"),
+    mediaType: z.enum(["image", "video"]),
+    caption: z.string().optional().nullable(),
+    mobilityId: z.coerce.number().optional().nullable(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.mediaType !== "video") return;
+    const info = getVideoEmbedInfo(data.url);
+    if (info.provider !== "youtube" && info.provider !== "vimeo" && !isDirectVideoFile(data.url)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["url"],
+        message: "Pega un enlace de YouTube, Vimeo o un archivo de vídeo (MP4, WebM…)",
+      });
+    }
+  });
 type UrlForm = z.infer<typeof urlSchema>;
 
 const editSchema = z.object({
@@ -212,13 +226,13 @@ function AddMediaModal({ onClose }: { onClose: () => void }) {
                 {...form.register("url")}
                 type="url"
                 data-testid="input-media-url"
-                placeholder={form.watch("mediaType") === "video" ? "https://...mp4" : "https://..."}
+                placeholder={form.watch("mediaType") === "video" ? "https://youtu.be/... o https://...mp4" : "https://..."}
                 className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
               />
               {form.formState.errors.url && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.url.message}</p>}
               {form.watch("mediaType") === "video" && (
                 <p className="text-xs text-slate-400 mt-1">
-                  Pega un enlace directo a un archivo de vídeo (MP4, WebM…). No se admiten enlaces de YouTube.
+                  Pega un enlace de YouTube, Vimeo o un archivo de vídeo directo (MP4, WebM…).
                 </p>
               )}
             </div>
@@ -310,9 +324,24 @@ function EditMediaModal({ item, onClose }: { item: MediaItem; onClose: () => voi
         </div>
 
         <div className="p-5">
-          <div className="mb-4 rounded-xl overflow-hidden aspect-video bg-slate-100">
+          <div className="mb-4 rounded-xl overflow-hidden aspect-video bg-slate-100 relative">
             {item.mediaType === "video" ? (
-              <video src={item.url} className="w-full h-full object-cover" controls preload="metadata" />
+              (() => {
+                const info = getVideoEmbedInfo(item.url);
+                if (info.provider === "youtube" || info.provider === "vimeo") {
+                  return (
+                    <>
+                      <VideoThumbnail url={item.url} caption={item.caption} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-12 h-12 rounded-full bg-black/55 backdrop-blur-sm flex items-center justify-center text-white shadow-lg">
+                          <Play size={20} className="translate-x-0.5" fill="currentColor" />
+                        </div>
+                      </div>
+                    </>
+                  );
+                }
+                return <video src={item.url} className="w-full h-full object-cover" controls preload="metadata" />;
+              })()
             ) : (
               <img src={item.url} alt={item.caption || "Media"} className="w-full h-full object-cover" />
             )}
@@ -431,7 +460,7 @@ export default function AdminMedia() {
             return (
               <div key={m.id} className="group relative aspect-video bg-slate-100 rounded-xl overflow-hidden shadow-sm" data-testid={`media-item-${m.id}`}>
                 {isVideo ? (
-                  <video src={m.url} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                  <VideoThumbnail url={m.url} caption={m.caption} className="w-full h-full object-cover" />
                 ) : (
                   <img src={m.url} alt={m.caption || "Media"} className="w-full h-full object-cover" loading="lazy" />
                 )}

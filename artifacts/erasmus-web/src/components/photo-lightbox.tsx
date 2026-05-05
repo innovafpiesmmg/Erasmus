@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { getVideoEmbedInfo } from "@/lib/video-embed";
 
 export type LightboxPhoto = {
   id: string | number;
@@ -176,15 +177,38 @@ export default function PhotoLightbox({
             </div>
           )}
           {photo.mediaType === "video" ? (
-            <video
-              key={photo.url}
-              src={photo.url}
-              controls
-              autoPlay
-              playsInline
-              className="max-w-[95vw] max-h-[80vh] rounded-lg shadow-2xl bg-black"
-              data-testid="lightbox-video"
-            />
+            (() => {
+              const info = getVideoEmbedInfo(photo.url);
+              if (info.provider === "youtube" || info.provider === "vimeo") {
+                return (
+                  <div
+                    key={photo.url}
+                    className="relative w-[95vw] max-w-[1280px] aspect-video max-h-[80vh] rounded-lg overflow-hidden shadow-2xl bg-black"
+                  >
+                    <iframe
+                      src={info.embedUrl}
+                      title={photo.caption ?? "Vídeo"}
+                      className="absolute inset-0 w-full h-full"
+                      frameBorder={0}
+                      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      data-testid="lightbox-iframe"
+                    />
+                  </div>
+                );
+              }
+              return (
+                <video
+                  key={photo.url}
+                  src={photo.url}
+                  controls
+                  autoPlay
+                  playsInline
+                  className="max-w-[95vw] max-h-[80vh] rounded-lg shadow-2xl bg-black"
+                  data-testid="lightbox-video"
+                />
+              );
+            })()
           ) : (
             <img
               src={photo.url}

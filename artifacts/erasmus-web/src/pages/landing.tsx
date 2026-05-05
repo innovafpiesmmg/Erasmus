@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { MapPin, Calendar, Globe, ChevronDown, ArrowRight, ChevronRight, Users, Leaf, Camera, ExternalLink, Play } from "lucide-react";
 import LanguageSelector from "@/components/language-selector";
 import PhotoLightbox from "@/components/photo-lightbox";
+import VideoThumbnail from "@/components/video-thumbnail";
 import { Link } from "wouter";
 import { useEffect, useRef, useState } from "react";
 
@@ -401,12 +402,10 @@ function GallerySection({ media }: { media: Media[] }) {
                 data-testid={`media-item-${m.id}`}
               >
                 {isVideo ? (
-                  <video
-                    src={m.url}
+                  <VideoThumbnail
+                    url={m.url}
+                    caption={m.caption}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                    preload="metadata"
-                    muted
-                    playsInline
                   />
                 ) : (
                   <img src={m.url} alt={m.caption || "Erasmus+"} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />

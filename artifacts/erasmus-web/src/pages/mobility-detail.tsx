@@ -8,6 +8,7 @@ import PublicHeader from "@/components/public-header";
 import { DestinationMap } from "@/components/destination-map";
 import { SocialShareIcons } from "@/components/social-share-icons";
 import PhotoLightbox from "@/components/photo-lightbox";
+import VideoThumbnail from "@/components/video-thumbnail";
 import type { StoryCardOptions } from "@/lib/instagram-card";
 
 function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
@@ -158,7 +159,7 @@ function PhotoGallery({ images }: { images: Media[] }) {
               }
             >
               {isVideo ? (
-                <video src={img.url} className="w-full h-full object-cover" preload="metadata" muted playsInline />
+                <VideoThumbnail url={img.url} caption={img.caption} className="w-full h-full object-cover" />
               ) : (
                 <img src={img.url} alt={img.caption ?? "Erasmus+"} className="w-full h-full object-cover" loading="lazy" />
               )}
