@@ -1,11 +1,12 @@
 import { useGetPartners } from "@workspace/api-client-react";
 import type { Partner } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Globe, ExternalLink, Instagram, Twitter, Star, X, Building2, Link as LinkIcon } from "lucide-react";
+import { MapPin, Globe, ExternalLink, Instagram, Twitter, Star, X, Building2, Link as LinkIcon, Share2, Check } from "lucide-react";
 import { useState, useEffect } from "react";
-import { Link, useSearch } from "wouter";
+import { Link, useSearch, useLocation } from "wouter";
 import PublicHeader from "@/components/public-header";
 import { DestinationMap } from "@/components/destination-map";
+import { SocialShareIcons } from "@/components/social-share-icons";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   España: "🇪🇸",
@@ -36,6 +37,48 @@ const PARTNER_COLORS = [
 
 function getPartnerColor(index: number) {
   return PARTNER_COLORS[index % PARTNER_COLORS.length];
+}
+
+function PartnerShareRow({ color }: { color: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url, title: document.title });
+      } catch {
+        // user cancelled or share not available — fall through to clipboard
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // clipboard access denied — silently ignore
+      }
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-3 flex-wrap">
+      <button
+        onClick={handleShare}
+        data-testid="partner-share-button"
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border"
+        style={{
+          background: `${color}12`,
+          color,
+          borderColor: `${color}30`,
+        }}
+      >
+        {copied ? <Check size={15} /> : <Share2 size={15} />}
+        {copied ? "¡Enlace copiado!" : "Compartir"}
+      </button>
+      <SocialShareIcons />
+    </div>
+  );
 }
 
 function PartnerDetailModal({ partner, color, onClose }: { partner: Partner; color: string; onClose: () => void }) {
@@ -187,6 +230,13 @@ function PartnerDetailModal({ partner, color, onClose }: { partner: Partner; col
               </div>
             )}
 
+            <div className="pt-3 border-t border-slate-100">
+              <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+                <Share2 size={12} /> Compartir este perfil
+              </p>
+              <PartnerShareRow color={color} />
+            </div>
+
             <button
               onClick={onClose}
               className="w-full py-2.5 border border-slate-200 rounded-xl text-sm text-slate-600 hover:bg-slate-50 transition-colors font-medium"
@@ -311,6 +361,7 @@ function PartnerCard({
 export default function PartnersPage() {
   const { data: partners = [], isLoading } = useGetPartners();
   const search = useSearch();
+  const [location, setLocation] = useLocation();
   const [selectedId, setSelectedId] = useState<number | null>(() => {
     const params = new URLSearchParams(search);
     const id = params.get("partner");
@@ -320,8 +371,21 @@ export default function PartnersPage() {
   useEffect(() => {
     const params = new URLSearchParams(search);
     const id = params.get("partner");
-    if (id) setSelectedId(Number(id));
+    setSelectedId(id ? Number(id) : null);
   }, [search]);
+
+  const openPartner = (id: number) => {
+    const params = new URLSearchParams(search);
+    params.set("partner", String(id));
+    setLocation(`${location}?${params.toString()}`);
+  };
+
+  const closePartner = () => {
+    const params = new URLSearchParams(search);
+    params.delete("partner");
+    const qs = params.toString();
+    setLocation(qs ? `${location}?${qs}` : location);
+  };
 
   const selectedPartner = partners.find((p) => p.id === selectedId);
   const selectedIndex = partners.findIndex((p) => p.id === selectedId);
@@ -378,7 +442,7 @@ export default function PartnersPage() {
                       partner={coordinator}
                       color={getPartnerColor(0)}
                       index={0}
-                      onClick={() => setSelectedId(coordinator.id)}
+                      onClick={() => openPartner(coordinator.id)}
                     />
                   </div>
                 </motion.div>
@@ -398,7 +462,7 @@ export default function PartnersPage() {
                         partner={partner}
                         color={getPartnerColor(i + 1)}
                         index={i}
-                        onClick={() => setSelectedId(partner.id)}
+                        onClick={() => openPartner(partner.id)}
                       />
                     ))}
                   </div>
@@ -423,7 +487,7 @@ export default function PartnersPage() {
         <PartnerDetailModal
           partner={selectedPartner}
           color={getPartnerColor(selectedIndex)}
-          onClose={() => setSelectedId(null)}
+          onClose={closePartner}
         />
       )}
     </div>
