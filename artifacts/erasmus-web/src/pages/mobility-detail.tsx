@@ -8,6 +8,7 @@ import PublicHeader from "@/components/public-header";
 import { DestinationMap } from "@/components/destination-map";
 import { SocialShareIcons } from "@/components/social-share-icons";
 import PhotoLightbox from "@/components/photo-lightbox";
+import type { StoryCardOptions } from "@/lib/instagram-card";
 
 function useMobilityMeta(mobility: { theme: string; description?: string | null; headerImageUrl?: string | null; partner?: { name?: string } | null } | undefined) {
   useEffect(() => {
@@ -61,7 +62,7 @@ function useMobilityMeta(mobility: { theme: string; description?: string | null;
   }, [mobility]);
 }
 
-function ShareButton() {
+function ShareButton({ storyCard }: { storyCard?: StoryCardOptions }) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -93,7 +94,7 @@ function ShareButton() {
         {copied ? <Check size={15} /> : <Share2 size={15} />}
         {copied ? "¡Enlace copiado!" : "Compartir"}
       </button>
-      <SocialShareIcons />
+      <SocialShareIcons storyCard={storyCard} />
     </div>
   );
 }
@@ -333,6 +334,21 @@ export default function MobilityDetail() {
   const color = WP_COLORS[mobility.workPackage] ?? "#003399";
   const flag = COUNTRY_FLAGS[mobility.partner?.country ?? ""] ?? "🌍";
 
+  const storyCard: StoryCardOptions = {
+    kind: "movilidad",
+    workPackage: mobility.workPackage,
+    color,
+    title: mobility.theme,
+    partnerName: mobility.partner?.name ?? null,
+    city: mobility.partner?.city ?? null,
+    country: mobility.partner?.country ?? null,
+    countryFlag: COUNTRY_FLAGS[mobility.partner?.country ?? ""],
+    startDate: mobility.startDate,
+    endDate: mobility.endDate,
+    imageUrl: mobility.headerImageUrl ?? null,
+    url: typeof window !== "undefined" ? window.location.href : "",
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <PublicHeader backTo="/" backLabel="Movilidades" />
@@ -362,7 +378,7 @@ export default function MobilityDetail() {
                 </span>
               </div>
               <div className="mt-6">
-                <ShareButton />
+                <ShareButton storyCard={storyCard} />
               </div>
             </motion.div>
           </div>

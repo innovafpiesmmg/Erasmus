@@ -1,14 +1,30 @@
 import { useState } from "react";
+import {
+  generateStoryCardBlob,
+  canShareStoryFile,
+  downloadBlob,
+  slugify,
+  type StoryCardOptions,
+} from "@/lib/instagram-card";
 
-export function SocialShareIcons() {
+type Props = {
+  storyCard?: StoryCardOptions;
+};
+
+export function SocialShareIcons({ storyCard }: Props = {}) {
   const url = encodeURIComponent(window.location.href);
   const title = encodeURIComponent(document.title);
   const [igHint, setIgHint] = useState<string | null>(null);
+  const [igBusy, setIgBusy] = useState(false);
 
-  const handleInstagram = async () => {
-    const rawUrl = window.location.href;
-    const rawTitle = document.title;
+  const showHint = (msg: string, ms = 3500) => {
+    setIgHint(msg);
+    setTimeout(() => {
+      setIgHint((current) => (current === msg ? null : current));
+    }, ms);
+  };
 
+  const fallbackShare = async (rawUrl: string, rawTitle: string) => {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ url: rawUrl, title: rawTitle, text: rawTitle });
@@ -20,16 +36,70 @@ export function SocialShareIcons() {
 
     try {
       await navigator.clipboard.writeText(rawUrl);
-      setIgHint("Enlace copiado · pégalo en tu historia");
+      showHint("Enlace copiado · pégalo en tu historia");
     } catch {
-      setIgHint("Copia el enlace y pégalo en Instagram");
+      showHint("Copia el enlace y pégalo en Instagram");
     }
-    setTimeout(() => setIgHint(null), 3500);
 
     const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     if (isMobile) {
       window.location.href = "instagram://story-camera";
     }
+  };
+
+  const handleInstagram = async () => {
+    if (igBusy) return;
+
+    const rawUrl = window.location.href;
+    const rawTitle = document.title;
+
+    if (storyCard) {
+      setIgBusy(true);
+      setIgHint("Generando imagen para tu historia…");
+      try {
+        const blob = await generateStoryCardBlob(storyCard);
+        if (blob) {
+          const filename = `${storyCard.filenameSlug ?? slugify(storyCard.title)}-erasmus.jpg`;
+          const file = new File([blob], filename, { type: "image/jpeg" });
+
+          if (canShareStoryFile(file)) {
+            try {
+              await navigator.share({
+                files: [file],
+                title: rawTitle,
+                text: rawTitle,
+              });
+              setIgHint(null);
+              return;
+            } catch (err) {
+              if ((err as DOMException)?.name === "AbortError") {
+                setIgHint(null);
+                return;
+              }
+              // share failed for another reason — fall through to download / link
+            }
+          }
+
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+          if (!isMobile) {
+            downloadBlob(blob, filename);
+            try {
+              await navigator.clipboard.writeText(rawUrl);
+              showHint("Imagen descargada y enlace copiado · súbela a tu historia");
+            } catch {
+              showHint("Imagen descargada · súbela a tu historia");
+            }
+            return;
+          }
+        }
+      } catch {
+        // image generation failed — fall through to plain share
+      } finally {
+        setIgBusy(false);
+      }
+    }
+
+    await fallbackShare(rawUrl, rawTitle);
   };
 
   return (
@@ -77,9 +147,10 @@ export function SocialShareIcons() {
       <button
         type="button"
         onClick={handleInstagram}
+        disabled={igBusy}
         aria-label="Compartir en Instagram"
         data-testid="share-instagram"
-        className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+        className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 disabled:opacity-60 disabled:cursor-wait"
         style={{
           background:
             "radial-gradient(circle at 30% 110%, #FFD600 0%, #FF7A00 25%, #FF0069 50%, #D300C5 75%, #7638FA 100%)",

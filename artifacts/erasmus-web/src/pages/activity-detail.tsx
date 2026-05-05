@@ -5,6 +5,7 @@ import { Calendar, MapPin, Leaf, ArrowRight, ImageOff, Share2, Check } from "luc
 import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
 import { SocialShareIcons } from "@/components/social-share-icons";
+import type { StoryCardOptions } from "@/lib/instagram-card";
 
 const WP_COLORS: Record<string, string> = {
   WP2: "#003399",
@@ -76,7 +77,7 @@ function useActivityMeta(activity: { title: string; description?: string | null;
   }, [activity]);
 }
 
-function ShareButton({ color }: { color: string }) {
+function ShareButton({ color, storyCard }: { color: string; storyCard?: StoryCardOptions }) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -113,7 +114,7 @@ function ShareButton({ color }: { color: string }) {
         {copied ? <Check size={15} /> : <Share2 size={15} />}
         {copied ? "¡Enlace copiado!" : "Compartir"}
       </button>
-      <SocialShareIcons />
+      <SocialShareIcons storyCard={storyCard} />
     </div>
   );
 }
@@ -169,6 +170,21 @@ export default function ActivityDetail() {
   }
 
   const color = mobility ? (WP_COLORS[mobility.workPackage] ?? "#003399") : "#003399";
+
+  const storyCard: StoryCardOptions = {
+    kind: "actividad",
+    workPackage: mobility?.workPackage,
+    color,
+    title: activity.title,
+    partnerName: mobility?.partner?.name ?? null,
+    city: mobility?.partner?.city ?? null,
+    country: mobility?.partner?.country ?? null,
+    countryFlag: mobility ? COUNTRY_FLAGS[mobility.partner?.country ?? ""] : undefined,
+    startDate: mobility?.startDate ?? null,
+    endDate: mobility?.endDate ?? null,
+    imageUrl: activity.imageUrl ?? mobility?.headerImageUrl ?? null,
+    url: typeof window !== "undefined" ? window.location.href : "",
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -231,7 +247,7 @@ export default function ActivityDetail() {
                 </div>
               )}
 
-              <ShareButton color={color} />
+              <ShareButton color={color} storyCard={storyCard} />
             </motion.div>
           </div>
         </div>
