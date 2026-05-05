@@ -1,7 +1,7 @@
 import { useParams, Link } from "wouter";
 import { useGetActivity, useGetMobility, getGetMobilityQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Leaf, ArrowRight } from "lucide-react";
+import { Calendar, MapPin, Leaf, ArrowRight, ImageOff } from "lucide-react";
 import PublicHeader from "@/components/public-header";
 
 const WP_COLORS: Record<string, string> = {
@@ -48,9 +48,11 @@ export default function ActivityDetail() {
       <div className="min-h-screen bg-slate-50">
         <PublicHeader backTo="/" backLabel="Actividades" />
         <div className="pt-14 max-w-3xl mx-auto px-6 py-16 space-y-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-10 bg-slate-200 rounded-xl animate-pulse" />
-          ))}
+          <div className="h-8 w-32 bg-slate-200 rounded-full animate-pulse" />
+          <div className="h-12 bg-slate-200 rounded-xl animate-pulse" />
+          <div className="h-72 bg-slate-200 rounded-2xl animate-pulse" />
+          <div className="h-6 bg-slate-200 rounded-xl animate-pulse w-3/4" />
+          <div className="h-6 bg-slate-200 rounded-xl animate-pulse w-1/2" />
         </div>
       </div>
     );
@@ -75,40 +77,56 @@ export default function ActivityDetail() {
       <PublicHeader backTo="/" backLabel="Actividades" />
 
       <div className="pt-14">
+        {/* ── Header with accent stripe ── */}
         <div className="bg-white border-b border-slate-100">
-          <div className="max-w-3xl mx-auto px-6 py-12">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-              <div className="flex items-center gap-2 mb-5">
+          <div
+            className="h-1 w-full"
+            style={{ background: `linear-gradient(90deg, ${color}, ${color}88)` }}
+          />
+          <div className="max-w-3xl mx-auto px-6 py-10">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Label */}
+              <div className="flex items-center gap-2 mb-4">
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{ background: `${color}18` }}
                 >
-                  <Leaf size={20} style={{ color }} />
+                  <Leaf size={16} style={{ color }} />
                 </div>
                 <span
-                  className="text-xs font-semibold uppercase tracking-widest"
+                  className="text-xs font-bold uppercase tracking-widest"
                   style={{ color }}
                 >
                   Actividad
                 </span>
-              </div>
-              <h1 className="text-4xl font-bold text-slate-900 leading-tight mb-5">
-                {activity.title}
-              </h1>
-              {mobility && (
-                <div className="flex items-center gap-3 flex-wrap">
+                {mobility && (
                   <span
-                    className="inline-flex items-center text-xs font-bold text-white px-3 py-1 rounded-full"
+                    className="ml-1 text-xs font-bold text-white px-2.5 py-0.5 rounded-full"
                     style={{ background: color }}
                   >
                     {mobility.workPackage}
                   </span>
-                  <span className="text-sm text-slate-500 flex items-center gap-1">
+                )}
+              </div>
+
+              {/* Title */}
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-4">
+                {activity.title}
+              </h1>
+
+              {/* Meta */}
+              {mobility && (
+                <div className="flex items-center gap-4 flex-wrap text-sm text-slate-500">
+                  <span className="flex items-center gap-1.5">
                     <MapPin size={13} />
                     {COUNTRY_FLAGS[mobility.partner?.country ?? ""] ?? "🌍"}{" "}
                     {mobility.partner?.city}, {mobility.partner?.country}
                   </span>
-                  <span className="text-sm text-slate-500 flex items-center gap-1">
+                  <span className="flex items-center gap-1.5">
                     <Calendar size={13} />
                     {formatDate(mobility.startDate)}
                   </span>
@@ -118,26 +136,42 @@ export default function ActivityDetail() {
           </div>
         </div>
 
-        <div className="max-w-3xl mx-auto px-6 py-12 space-y-10">
-          {activity.imageUrl && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.1 }}
+        {/* ── Cover image — full width, right below header ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="w-full bg-slate-100"
+          style={{ maxHeight: 480 }}
+        >
+          {activity.imageUrl ? (
+            <img
+              src={activity.imageUrl}
+              alt={activity.title}
+              className="w-full object-cover"
+              style={{ maxHeight: 480, minHeight: 220 }}
+            />
+          ) : (
+            <div
+              className="w-full flex flex-col items-center justify-center py-20 gap-3"
+              style={{
+                background: `linear-gradient(135deg, ${color}10 0%, ${color}06 100%)`,
+                borderBottom: `1px solid ${color}18`,
+              }}
             >
-              <img
-                src={activity.imageUrl}
-                alt={activity.title}
-                className="w-full rounded-2xl shadow-md object-cover max-h-80"
-              />
-            </motion.div>
+              <ImageOff size={36} style={{ color: `${color}60` }} />
+              <span className="text-sm text-slate-400">Sin imagen de portada</span>
+            </div>
           )}
+        </motion.div>
 
+        {/* ── Body ── */}
+        <div className="max-w-3xl mx-auto px-6 py-12 space-y-10">
           {activity.description && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
+              transition={{ delay: 0.2 }}
             >
               <h2 className="text-lg font-semibold text-slate-900 mb-3">Descripción</h2>
               <p className="text-slate-600 leading-relaxed text-base whitespace-pre-wrap">
@@ -150,11 +184,11 @@ export default function ActivityDetail() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.25 }}
             >
               <h2 className="text-lg font-semibold text-slate-900 mb-3">Movilidad asociada</h2>
               <Link href={`/movilidades/${mobility.id}`}>
-                <div className="bg-white rounded-xl border border-slate-100 p-5 hover:border-[#003399]/20 hover:shadow-md transition-all cursor-pointer">
+                <div className="bg-white rounded-xl border border-slate-100 p-5 hover:border-[#003399]/20 hover:shadow-md transition-all cursor-pointer group">
                   <div className="flex items-start gap-4">
                     <div
                       className="w-12 h-12 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -169,7 +203,7 @@ export default function ActivityDetail() {
                         {formatDate(mobility.startDate)} — {formatDate(mobility.endDate)}
                       </div>
                     </div>
-                    <ArrowRight size={16} className="text-slate-300 flex-shrink-0 mt-1" />
+                    <ArrowRight size={16} className="text-slate-300 group-hover:text-slate-500 flex-shrink-0 mt-1 transition-colors" />
                   </div>
                 </div>
               </Link>

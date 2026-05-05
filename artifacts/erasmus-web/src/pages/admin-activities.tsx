@@ -5,10 +5,10 @@ import {
 import type { Activity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, BookOpen, X } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, X, ImageOff } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const activitySchema = z.object({
@@ -29,6 +29,8 @@ function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: ()
     resolver: zodResolver(activitySchema),
     defaultValues: activity || {},
   });
+
+  const imageUrlValue = useWatch({ control: form.control, name: "imageUrl" });
 
   const onSubmit = (data: ActivityForm) => {
     const payload = {
@@ -75,9 +77,31 @@ function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: ()
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Imagen (URL)</label>
-            <input {...form.register("imageUrl")} type="url" data-testid="input-activity-image" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
-            {form.formState.errors.imageUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.imageUrl.message}</p>}
+            <label className="block text-xs font-medium text-slate-700 mb-1">Imagen de portada (URL)</label>
+            <input
+              {...form.register("imageUrl")}
+              type="url"
+              placeholder="https://..."
+              data-testid="input-activity-image"
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
+            />
+            {form.formState.errors.imageUrl && (
+              <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.imageUrl.message}</p>
+            )}
+            {imageUrlValue && !form.formState.errors.imageUrl ? (
+              <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style={{ height: 140 }}>
+                <img
+                  src={imageUrlValue}
+                  alt="Previsualización"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.parentElement!.querySelector(".img-error") as HTMLElement).style.display = "flex"; }}
+                />
+                <div className="img-error hidden w-full h-full items-center justify-center flex-col gap-1 text-slate-400" style={{ marginTop: -140, height: 140 }}>
+                  <ImageOff size={24} />
+                  <span className="text-xs">No se puede cargar la imagen</span>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className="flex gap-3 pt-2">
@@ -132,8 +156,19 @@ export default function AdminActivities() {
               {activities.map((a) => (
                 <tr key={a.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50" data-testid={`activity-row-${a.id}`}>
                   <td className="px-5 py-3">
-                    <div className="font-medium text-slate-900 text-sm">{a.title}</div>
-                    {a.description && <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">{a.description}</div>}
+                    <div className="flex items-center gap-3">
+                      {a.imageUrl ? (
+                        <img src={a.imageUrl} alt="" className="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-slate-100" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center flex-shrink-0">
+                          <ImageOff size={14} className="text-slate-300" />
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-medium text-slate-900 text-sm">{a.title}</div>
+                        {a.description && <div className="text-xs text-slate-400 line-clamp-1 mt-0.5">{a.description}</div>}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-5 py-3 hidden md:table-cell">
                     {a.mobilityId ? (
