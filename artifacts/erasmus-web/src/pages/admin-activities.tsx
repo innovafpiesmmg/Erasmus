@@ -4,11 +4,11 @@ import {
 } from "@workspace/api-client-react";
 import type { Activity } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, BookOpen, X, ImageOff } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, X, ImageOff, Upload, Link } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const activitySchema = z.object({
@@ -27,10 +27,42 @@ function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: ()
 
   const form = useForm<ActivityForm>({
     resolver: zodResolver(activitySchema),
-    defaultValues: activity || {},
+    defaultValues: activity ?? {},
   });
 
   const imageUrlValue = useWatch({ control: form.control, name: "imageUrl" });
+
+  const [imgTab, setImgTab] = useState<"upload" | "url">("upload");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al subir");
+      }
+      const { url } = await res.json() as { url: string };
+      form.setValue("imageUrl", url, { shouldValidate: true });
+      setSelectedFile(file);
+    } catch (e) {
+      setUploadError((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const onSubmit = (data: ActivityForm) => {
     const payload = {
@@ -48,8 +80,8 @@ function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: ()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg">
-        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-5 border-b border-slate-100 sticky top-0 bg-white z-10">
           <h2 className="font-semibold text-slate-900">{activity ? "Editar actividad" : "Nueva actividad"}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={20} /></button>
         </div>
@@ -76,39 +108,103 @@ function ActivityModal({ activity, onClose }: { activity?: Activity; onClose: ()
             </select>
           </div>
 
+          {/* ── Image section ── */}
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Imagen de portada (URL)</label>
-            <input
-              {...form.register("imageUrl")}
-              type="url"
-              placeholder="https://..."
-              data-testid="input-activity-image"
-              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
-            />
-            {form.formState.errors.imageUrl && (
-              <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.imageUrl.message}</p>
-            )}
-            {imageUrlValue && !form.formState.errors.imageUrl ? (
-              <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style={{ height: 140 }}>
-                <img
-                  src={imageUrlValue}
-                  alt="Previsualización"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.parentElement!.querySelector(".img-error") as HTMLElement).style.display = "flex"; }}
-                />
-                <div className="img-error hidden w-full h-full items-center justify-center flex-col gap-1 text-slate-400" style={{ marginTop: -140, height: 140 }}>
-                  <ImageOff size={24} />
-                  <span className="text-xs">No se puede cargar la imagen</span>
+            <label className="block text-xs font-medium text-slate-700 mb-2">Imagen de portada</label>
+            <div className="flex border border-slate-200 rounded-lg overflow-hidden mb-3">
+              <button
+                type="button"
+                onClick={() => setImgTab("upload")}
+                className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${imgTab === "upload" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <Upload size={13} /> Subir archivo
+              </button>
+              <button
+                type="button"
+                onClick={() => setImgTab("url")}
+                className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${imgTab === "url" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <Link size={13} /> Por URL
+              </button>
+            </div>
+
+            {imgTab === "upload" ? (
+              <div>
+                <div
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-[#003399] bg-blue-50" : uploading ? "border-slate-200 bg-slate-50 cursor-wait" : "border-slate-200 hover:border-slate-300"}`}
+                >
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-8 h-8 border-2 border-[#003399] border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-slate-500">Subiendo...</p>
+                    </div>
+                  ) : imageUrlValue && selectedFile ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={imageUrlValue} alt="" className="h-20 rounded-lg object-cover mx-auto" />
+                      <p className="text-xs text-slate-500 truncate max-w-full">{selectedFile.name}</p>
+                      <p className="text-xs text-green-600 font-medium">✓ Subida correctamente</p>
+                    </div>
+                  ) : activity?.imageUrl && !selectedFile ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={activity.imageUrl} alt="" className="h-20 rounded-lg object-cover mx-auto" />
+                      <p className="text-xs text-slate-400">Haz clic para cambiar la imagen</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload size={28} className="mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm text-slate-500">Arrastra aquí o <span className="text-[#003399] font-medium">selecciona un archivo</span></p>
+                      <p className="text-xs text-slate-400 mt-1">JPEG, PNG, GIF, WebP · Máx. 20 MB</p>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    data-testid="input-activity-image"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
+                  />
                 </div>
+                {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
               </div>
-            ) : null}
+            ) : (
+              <div>
+                <input
+                  {...form.register("imageUrl")}
+                  type="url"
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
+                />
+                {form.formState.errors.imageUrl && (
+                  <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.imageUrl.message}</p>
+                )}
+                {imageUrlValue && !form.formState.errors.imageUrl && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style={{ height: 120 }}>
+                    <img
+                      src={imageUrlValue}
+                      alt="Previsualización"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Cancelar</button>
             <button
               type="submit"
-              disabled={create.isPending || update.isPending}
+              disabled={create.isPending || update.isPending || uploading}
               data-testid="button-save-activity"
               className="flex-1 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-60"
               style={{ background: "#003399" }}

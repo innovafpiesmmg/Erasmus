@@ -50,6 +50,19 @@ async function validateMobilityId(mobilityId: number): Promise<boolean> {
 
 const router: IRouter = Router();
 
+router.post("/upload", upload.single("file"), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ error: "No file provided" });
+      return;
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.status(201).json({ url: fileUrl });
+  } catch {
+    res.status(500).json({ error: "Failed to upload file" });
+  }
+});
+
 router.get("/media", async (req: Request, res: Response) => {
   try {
     const mobilityId = req.query.mobilityId ? Number(req.query.mobilityId) : null;
