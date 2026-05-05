@@ -370,6 +370,87 @@ export function useGetAdminMe<
 }
 
 /**
+ * @summary Renew the current admin session
+ */
+export const getRenewAdminSessionUrl = () => {
+  return `/api/admin/session/renew`;
+};
+
+export const renewAdminSession = async (
+  options?: RequestInit,
+): Promise<AuthResponse> => {
+  return customFetch<AuthResponse>(getRenewAdminSessionUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getRenewAdminSessionMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renewAdminSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof renewAdminSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["renewAdminSession"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof renewAdminSession>>,
+    void
+  > = () => {
+    return renewAdminSession(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type RenewAdminSessionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof renewAdminSession>>
+>;
+
+export type RenewAdminSessionMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Renew the current admin session
+ */
+export const useRenewAdminSession = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof renewAdminSession>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof renewAdminSession>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getRenewAdminSessionMutationOptions(options));
+};
+
+/**
  * @summary Dashboard summary stats
  */
 export const getGetDashboardSummaryUrl = () => {

@@ -98,6 +98,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/session/renew:
+    post:
+      operationId: renewAdminSession
+      tags: [auth]
+      summary: Renew the current admin session
+      responses:
+        "200":
+          description: Session renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # Dashboard
   /dashboard/summary:
     get:
@@ -618,6 +637,10 @@ components:
           type: string
         partnerId:
           type: ["integer", "null"]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
       required:
         - authenticated
         - username

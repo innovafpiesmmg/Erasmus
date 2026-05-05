@@ -59,7 +59,7 @@ async function ensureSeedAdmin(): Promise<void> {
 
 export async function getSession(
   sessionId: string,
-): Promise<{ authenticated: boolean; username: string; partnerId: number | null } | null> {
+): Promise<{ authenticated: boolean; username: string; partnerId: number | null; expiresAt: Date } | null> {
   const rows = await db
     .select()
     .from(sessionsTable)
@@ -80,7 +80,7 @@ export async function getSession(
     .limit(1);
 
   const partnerId = adminRows[0]?.partnerId ?? null;
-  return { authenticated: true, username: session.username, partnerId };
+  return { authenticated: true, username: session.username, partnerId, expiresAt: session.expiresAt };
 }
 
 const router: IRouter = Router();
@@ -126,7 +126,7 @@ router.post("/admin/login", async (req: Request, res: Response) => {
       .filter(Boolean)
       .join("; ");
     res.setHeader("Set-Cookie", cookieFlags);
-    res.json({ authenticated: true, username: admin.username, partnerId: admin.partnerId ?? null });
+    res.json({ authenticated: true, username: admin.username, partnerId: admin.partnerId ?? null, expiresAt: expiresAt.toISOString() });
   } catch (err) {
     logger.error({ err }, "Login error");
     res.status(500).json({ error: "Error interno del servidor" });
@@ -146,10 +146,38 @@ router.get("/admin/me", async (req: Request, res: Response) => {
   const sessionId = req.cookies["sessionId"];
   const session = sessionId ? await getSession(sessionId) : null;
   if (session?.authenticated) {
-    res.json({ authenticated: true, username: session.username, partnerId: session.partnerId ?? null });
+    res.json({ authenticated: true, username: session.username, partnerId: session.partnerId ?? null, expiresAt: session.expiresAt.toISOString() });
   } else {
     res.status(401).json({ error: "Not authenticated" });
   }
+});
+
+router.post("/admin/session/renew", async (req: Request, res: Response) => {
+  const sessionId = req.cookies["sessionId"];
+  const session = sessionId ? await getSession(sessionId) : null;
+  if (!session?.authenticated) {
+    res.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  const newExpiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+  await db
+    .update(sessionsTable)
+    .set({ expiresAt: newExpiresAt })
+    .where(eq(sessionsTable.id, sessionId!));
+
+  const cookieFlags = [
+    `sessionId=${sessionId}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    SECURE_COOKIES ? "Secure" : "",
+    `Max-Age=${SESSION_TTL_SECONDS}`,
+  ]
+    .filter(Boolean)
+    .join("; ");
+  res.setHeader("Set-Cookie", cookieFlags);
+  res.json({ authenticated: true, username: session.username, partnerId: session.partnerId ?? null, expiresAt: newExpiresAt.toISOString() });
 });
 
 export default router;

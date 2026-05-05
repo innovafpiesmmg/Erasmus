@@ -27,6 +27,7 @@ export const AdminLoginResponse = zod.object({
   authenticated: zod.boolean(),
   username: zod.string(),
   partnerId: zod.number().nullish(),
+  expiresAt: zod.coerce.date().nullish(),
 });
 
 /**
@@ -43,6 +44,17 @@ export const GetAdminMeResponse = zod.object({
   authenticated: zod.boolean(),
   username: zod.string(),
   partnerId: zod.number().nullish(),
+  expiresAt: zod.coerce.date().nullish(),
+});
+
+/**
+ * @summary Renew the current admin session
+ */
+export const RenewAdminSessionResponse = zod.object({
+  authenticated: zod.boolean(),
+  username: zod.string(),
+  partnerId: zod.number().nullish(),
+  expiresAt: zod.coerce.date().nullish(),
 });
 
 /**

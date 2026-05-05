@@ -3,6 +3,7 @@ import { Link, useLocation, Redirect } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X, HardDriveDownload, UserCog, Building2 } from "lucide-react";
 import { useState } from "react";
+import SessionExpiryWarning from "./session-expiry-warning";
 
 const FULL_NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -115,6 +116,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
+      <SessionExpiryWarning expiresAt={me.expiresAt} />
+
       <aside className="hidden md:flex flex-col w-56 bg-white border-r border-slate-100 fixed top-0 left-0 bottom-0 z-30">
         <SidebarContent />
       </aside>

@@ -27,6 +27,7 @@ export interface AuthResponse {
   username: string;
   /** @nullable */
   partnerId?: number | null;
+  expiresAt?: string | null;
 }
 
 export interface UploadMediaBody {
