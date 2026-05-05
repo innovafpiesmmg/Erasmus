@@ -29,7 +29,7 @@ const partnerSchema = z.object({
 });
 type PartnerForm = z.infer<typeof partnerSchema>;
 
-function LogoPreview({ control }: { control: import("react-hook-form").Control<PartnerForm> }) {
+function LogoPreview({ control, onRemove }: { control: import("react-hook-form").Control<PartnerForm>; onRemove: () => void }) {
   const logoUrl = useWatch({ control, name: "logoUrl" });
   if (!logoUrl) return null;
   return (
@@ -45,6 +45,15 @@ function LogoPreview({ control }: { control: import("react-hook-form").Control<P
         <p className="text-xs text-slate-500 truncate">{logoUrl}</p>
         <p className="text-xs text-[#003399] mt-0.5 flex items-center gap-1"><ImageOff size={10} /> Vista previa del logo</p>
       </div>
+      <button
+        type="button"
+        onClick={onRemove}
+        data-testid="button-remove-logo"
+        className="flex-shrink-0 p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+        title="Eliminar logo"
+      >
+        <X size={14} />
+      </button>
     </div>
   );
 }
@@ -209,7 +218,7 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
               </div>
               {form.formState.errors.logoUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.logoUrl.message}</p>}
               {logoUploadError && <p className="text-red-500 text-xs mt-0.5">{logoUploadError}</p>}
-              <LogoPreview control={form.control} />
+              <LogoPreview control={form.control} onRemove={() => { form.setValue("logoUrl", "", { shouldValidate: true, shouldDirty: true }); if (logoFileInputRef.current) logoFileInputRef.current.value = ""; }} />
             </div>
 
             {/* ── Foto del país ── */}
