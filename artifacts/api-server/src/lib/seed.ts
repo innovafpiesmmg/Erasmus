@@ -309,7 +309,7 @@ export async function seedIfEmpty(): Promise<void> {
   try {
     const [{ count }] = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(partnersTable);
+      .from(settingsTable);
 
     if (count > 0) {
       logger.info({ count }, "Database already seeded, skipping");
