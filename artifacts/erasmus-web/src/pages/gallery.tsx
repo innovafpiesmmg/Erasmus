@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { useGetMedia, useGetMobilities } from "@workspace/api-client-react";
 import type { MobilityWithPartner, Media } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Camera, MapPin, Calendar, ChevronRight, ImageOff, Play } from "lucide-react";
+import { Camera, MapPin, Calendar, ChevronRight, ImageOff, Play, X, Globe2 } from "lucide-react";
 import PublicHeader from "@/components/public-header";
 import PhotoLightbox from "@/components/photo-lightbox";
 
@@ -208,6 +208,7 @@ function MobilityGallerySection({
 
 export default function Gallery() {
   const [activeYear, setActiveYear] = useState<AcademicYear>("2025-2026");
+  const [activeCountry, setActiveCountry] = useState<string | null>(null);
   const { data: media = [], isLoading: mediaLoading } = useGetMedia();
   const { data: mobilities = [], isLoading: mobLoading } = useGetMobilities();
   const isLoading = mediaLoading || mobLoading;
@@ -216,7 +217,7 @@ export default function Gallery() {
     (m) => getAcademicYear(m.startDate) === activeYear,
   );
 
-  const sectionsWithPhotos = mobilitiesForYear
+  const allSectionsForYear = mobilitiesForYear
     .map((mob) => ({
       mobility: mob,
       photos: media.filter(
@@ -226,6 +227,39 @@ export default function Gallery() {
       ),
     }))
     .filter(({ photos }) => photos.length > 0);
+
+  const availableCountries = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const s of allSectionsForYear) {
+      const country = s.mobility.partner?.country;
+      if (!country) continue;
+      counts.set(country, (counts.get(country) ?? 0) + s.photos.length);
+    }
+    return Array.from(counts.entries())
+      .map(([country, count]) => ({ country, count }))
+      .sort((a, b) => a.country.localeCompare(b.country, "es"));
+  }, [allSectionsForYear]);
+
+  useEffect(() => {
+    if (
+      activeCountry !== null &&
+      !availableCountries.some((c) => c.country === activeCountry)
+    ) {
+      setActiveCountry(null);
+    }
+  }, [activeCountry, availableCountries]);
+
+  const effectiveCountry =
+    activeCountry !== null &&
+    availableCountries.some((c) => c.country === activeCountry)
+      ? activeCountry
+      : null;
+
+  const sectionsWithPhotos = effectiveCountry
+    ? allSectionsForYear.filter(
+        (s) => s.mobility.partner?.country === effectiveCountry,
+      )
+    : allSectionsForYear;
 
   const allItems = sectionsWithPhotos.flatMap((s) => s.photos);
   const totalPhotos = sectionsWithPhotos.reduce(
@@ -266,19 +300,72 @@ export default function Gallery() {
           </div>
         </div>
 
-        {/* ── Year filter bar ── */}
+        {/* ── Filter bar ── */}
         <div className="bg-white border-b border-slate-100 sticky top-16 z-30 backdrop-blur-sm bg-white/95">
-          <div className="max-w-5xl mx-auto px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
-              {ACADEMIC_YEARS.map((year) => {
-                const isActive = activeYear === year;
-                return (
+          <div className="max-w-5xl mx-auto px-6 py-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-wrap gap-2">
+                {ACADEMIC_YEARS.map((year) => {
+                  const isActive = activeYear === year;
+                  return (
+                    <button
+                      key={year}
+                      onClick={() => setActiveYear(year)}
+                      className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all border"
+                      style={
+                        isActive
+                          ? {
+                              background: "#003399",
+                              color: "#fff",
+                              borderColor: "#003399",
+                            }
+                          : {
+                              background: "#fff",
+                              color: "#475569",
+                              borderColor: "#e2e8f0",
+                            }
+                      }
+                      data-testid={`year-filter-${year}`}
+                    >
+                      Curso {year}
+                    </button>
+                  );
+                })}
+              </div>
+              {!isLoading && sectionsWithPhotos.length > 0 && (
+                <div className="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Camera size={12} className="text-[#003399]" />
+                    <strong className="text-slate-700">{totalPhotos}</strong>{" "}
+                    {mediaCountLabel(allItems)}
+                  </span>
+                  <span className="text-slate-300">·</span>
+                  <span>
+                    <strong className="text-slate-700">
+                      {sectionsWithPhotos.length}
+                    </strong>{" "}
+                    {sectionsWithPhotos.length === 1
+                      ? "movilidad"
+                      : "movilidades"}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {!isLoading && availableCountries.length > 0 && (
+              <div className="flex items-start gap-2 pt-1 border-t border-slate-100">
+                <span className="hidden sm:inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400 pt-2 flex-shrink-0">
+                  <Globe2 size={11} /> País
+                </span>
+                <div
+                  className="flex flex-wrap gap-1.5 pt-1.5 flex-1"
+                  data-testid="country-filter-bar"
+                >
                   <button
-                    key={year}
-                    onClick={() => setActiveYear(year)}
-                    className="px-4 py-1.5 rounded-full text-sm font-semibold transition-all border"
+                    onClick={() => setActiveCountry(null)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border"
                     style={
-                      isActive
+                      effectiveCountry === null
                         ? {
                             background: "#003399",
                             color: "#fff",
@@ -290,29 +377,56 @@ export default function Gallery() {
                             borderColor: "#e2e8f0",
                           }
                     }
-                    data-testid={`year-filter-${year}`}
+                    data-testid="country-filter-all"
                   >
-                    Curso {year}
+                    Todos los países
                   </button>
-                );
-              })}
-            </div>
-            {!isLoading && sectionsWithPhotos.length > 0 && (
-              <div className="text-xs text-slate-500 flex items-center gap-3 flex-wrap">
-                <span className="inline-flex items-center gap-1.5">
-                  <Camera size={12} className="text-[#003399]" />
-                  <strong className="text-slate-700">{totalPhotos}</strong>{" "}
-                  {mediaCountLabel(allItems)}
-                </span>
-                <span className="text-slate-300">·</span>
-                <span>
-                  <strong className="text-slate-700">
-                    {sectionsWithPhotos.length}
-                  </strong>{" "}
-                  {sectionsWithPhotos.length === 1
-                    ? "movilidad"
-                    : "movilidades"}
-                </span>
+                  {availableCountries.map(({ country, count }) => {
+                    const isActive = effectiveCountry === country;
+                    const flag = COUNTRY_FLAGS[country] ?? "🌍";
+                    return (
+                      <button
+                        key={country}
+                        onClick={() =>
+                          setActiveCountry(isActive ? null : country)
+                        }
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all border"
+                        style={
+                          isActive
+                            ? {
+                                background: "#003399",
+                                color: "#fff",
+                                borderColor: "#003399",
+                              }
+                            : {
+                                background: "#fff",
+                                color: "#475569",
+                                borderColor: "#e2e8f0",
+                              }
+                        }
+                        data-testid={`country-filter-${country}`}
+                      >
+                        <span aria-hidden>{flag}</span>
+                        <span>{country}</span>
+                        <span
+                          className="text-[10px] font-medium"
+                          style={{
+                            color: isActive ? "#ffffffb3" : "#94a3b8",
+                          }}
+                        >
+                          {count}
+                        </span>
+                        {isActive && (
+                          <X
+                            size={11}
+                            className="ml-0.5 -mr-0.5"
+                            aria-label={`Quitar filtro ${country}`}
+                          />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -356,20 +470,42 @@ export default function Gallery() {
               <div className="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-4">
                 <ImageOff size={28} className="text-slate-300" />
               </div>
-              <h3 className="text-base font-semibold text-slate-700 mb-1.5">
-                Aún no hay fotografías para este curso
-              </h3>
-              <p className="text-sm text-slate-500 max-w-md mx-auto">
-                Las imágenes de las movilidades del curso{" "}
-                <strong className="text-slate-700">{activeYear}</strong> se
-                publicarán a medida que se realicen los viajes.
-              </p>
-              <Link
-                href="/"
-                className="inline-flex items-center gap-1 mt-6 text-sm font-semibold text-[#003399] hover:underline"
-              >
-                Volver al inicio <ChevronRight size={14} />
-              </Link>
+              {effectiveCountry ? (
+                <>
+                  <h3 className="text-base font-semibold text-slate-700 mb-1.5">
+                    No hay fotografías de {effectiveCountry} en este curso
+                  </h3>
+                  <p className="text-sm text-slate-500 max-w-md mx-auto">
+                    Prueba con otro país o quita el filtro para ver todas las
+                    fotografías del curso{" "}
+                    <strong className="text-slate-700">{activeYear}</strong>.
+                  </p>
+                  <button
+                    onClick={() => setActiveCountry(null)}
+                    className="inline-flex items-center gap-1 mt-6 text-sm font-semibold text-[#003399] hover:underline"
+                    data-testid="gallery-empty-clear-country"
+                  >
+                    <X size={14} /> Quitar filtro de país
+                  </button>
+                </>
+              ) : (
+                <>
+                  <h3 className="text-base font-semibold text-slate-700 mb-1.5">
+                    Aún no hay fotografías para este curso
+                  </h3>
+                  <p className="text-sm text-slate-500 max-w-md mx-auto">
+                    Las imágenes de las movilidades del curso{" "}
+                    <strong className="text-slate-700">{activeYear}</strong> se
+                    publicarán a medida que se realicen los viajes.
+                  </p>
+                  <Link
+                    href="/"
+                    className="inline-flex items-center gap-1 mt-6 text-sm font-semibold text-[#003399] hover:underline"
+                  >
+                    Volver al inicio <ChevronRight size={14} />
+                  </Link>
+                </>
+              )}
             </motion.div>
           ) : (
             sectionsWithPhotos.map(({ mobility, photos }, i) => (
