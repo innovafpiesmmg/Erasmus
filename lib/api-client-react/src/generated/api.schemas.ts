@@ -61,6 +61,8 @@ export interface Settings {
   socialTwitter?: string | null;
   /** @nullable */
   socialFacebook?: string | null;
+  projectStartYear: string;
+  projectEndYear: string;
   updatedAt: string;
 }
 
@@ -81,6 +83,8 @@ export interface UpdateSettingsBody {
   socialTwitter?: string | null;
   /** @nullable */
   socialFacebook?: string | null;
+  projectStartYear?: string;
+  projectEndYear?: string;
 }
 
 export interface Partner {

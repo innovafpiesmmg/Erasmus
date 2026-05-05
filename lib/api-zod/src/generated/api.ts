@@ -116,6 +116,8 @@ export const GetSettingsResponse = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
+  projectStartYear: zod.string(),
+  projectEndYear: zod.string(),
   updatedAt: zod.string(),
 });
 
@@ -134,6 +136,8 @@ export const UpdateSettingsBody = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
+  projectStartYear: zod.string().optional(),
+  projectEndYear: zod.string().optional(),
 });
 
 export const UpdateSettingsResponse = zod.object({
@@ -149,6 +153,8 @@ export const UpdateSettingsResponse = zod.object({
   socialInstagram: zod.string().nullish(),
   socialTwitter: zod.string().nullish(),
   socialFacebook: zod.string().nullish(),
+  projectStartYear: zod.string(),
+  projectEndYear: zod.string(),
   updatedAt: zod.string(),
 });
 

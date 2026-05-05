@@ -15,6 +15,8 @@ export const settingsTable = pgTable("settings", {
   socialInstagram: text("social_instagram"),
   socialTwitter: text("social_twitter"),
   socialFacebook: text("social_facebook"),
+  projectStartYear: text("project_start_year").notNull().default("2025"),
+  projectEndYear: text("project_end_year").notNull().default("2027"),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

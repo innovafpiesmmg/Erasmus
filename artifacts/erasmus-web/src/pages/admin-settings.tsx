@@ -19,6 +19,8 @@ const settingsSchema = z.object({
   socialInstagram: z.string().optional().nullable(),
   socialTwitter: z.string().optional().nullable(),
   socialFacebook: z.string().optional().nullable(),
+  projectStartYear: z.string().optional().nullable(),
+  projectEndYear: z.string().optional().nullable(),
 });
 type SettingsForm = z.infer<typeof settingsSchema>;
 
@@ -59,6 +61,8 @@ export default function AdminSettings() {
         socialInstagram: settings.socialInstagram || "",
         socialTwitter: settings.socialTwitter || "",
         socialFacebook: settings.socialFacebook || "",
+        projectStartYear: settings.projectStartYear || "2025",
+        projectEndYear: settings.projectEndYear || "2027",
       });
     }
   }, [settings, form]);
@@ -77,6 +81,8 @@ export default function AdminSettings() {
         socialInstagram: data.socialInstagram || null,
         socialTwitter: data.socialTwitter || null,
         socialFacebook: data.socialFacebook || null,
+        projectStartYear: data.projectStartYear || undefined,
+        projectEndYear: data.projectEndYear || undefined,
       },
     });
   };
@@ -118,6 +124,15 @@ export default function AdminSettings() {
             <FormField label="Descripción del proyecto">
               <textarea {...form.register("projectDescription")} rows={3} data-testid="input-project-description" className={`${inputClass} resize-none`} />
             </FormField>
+
+            <div className="grid grid-cols-2 gap-4">
+              <FormField label="Año de inicio" error={form.formState.errors.projectStartYear?.message}>
+                <input {...form.register("projectStartYear")} data-testid="input-start-year" className={inputClass} placeholder="2025" maxLength={4} />
+              </FormField>
+              <FormField label="Año de fin" error={form.formState.errors.projectEndYear?.message}>
+                <input {...form.register("projectEndYear")} data-testid="input-end-year" className={inputClass} placeholder="2027" maxLength={4} />
+              </FormField>
+            </div>
           </div>
         </div>
 

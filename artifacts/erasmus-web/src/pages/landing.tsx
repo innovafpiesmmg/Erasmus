@@ -56,7 +56,7 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
           className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-1.5 text-white/80 text-sm mb-8"
         >
           <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          Proyecto Erasmus+ SEA · 2025–2027
+          Proyecto Erasmus+ SEA · {settings?.projectStartYear ?? "2025"}–{settings?.projectEndYear ?? "2027"}
         </motion.div>
 
         <motion.h1
@@ -114,12 +114,14 @@ function HeroSection({ settings }: { settings: Settings | undefined }) {
   );
 }
 
-function StatsBar({ partners, mobilities }: { partners: Partner[]; mobilities: MobilityWithPartner[] | undefined }) {
+function StatsBar({ partners, mobilities, settings }: { partners: Partner[]; mobilities: MobilityWithPartner[] | undefined; settings: Settings | undefined }) {
+  const startYear = settings?.projectStartYear ?? "2025";
+  const endYear = settings?.projectEndYear ?? "2027";
   const stats = [
     { label: "Países participantes", value: partners.length || 6, icon: Globe },
     { label: "Movilidades planificadas", value: mobilities?.length ?? 6, icon: Calendar },
-    { label: "Años de proyecto", value: "2024–2027", icon: Leaf },
-    { label: "Programa", value: "Erasmus+ SEA", icon: Users },
+    { label: "Años de proyecto", value: `${startYear}–${endYear}`, icon: Leaf },
+    { label: "Programa", value: settings?.projectName ?? "Erasmus+ SEA", icon: Users },
   ];
 
   return (
@@ -474,7 +476,7 @@ function Footer({ settings }: { settings: Settings | undefined }) {
           </div>
         </div>
         <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row justify-between items-center gap-2 text-xs text-white/40">
-          <span>© 2025–2027 IES Manuel Martín González · Proyecto financiado por la Unión Europea</span>
+          <span>© {settings?.projectStartYear ?? "2025"}–{settings?.projectEndYear ?? "2027"} {settings?.siteTitle ?? "IES Manuel Martín González"} · Proyecto financiado por la Unión Europea</span>
           <Link href="/admin/login" className="hover:text-white/70 transition-colors">Acceso administración</Link>
         </div>
       </div>
@@ -543,7 +545,7 @@ export default function LandingPage() {
     <div className="min-h-screen">
       <Navbar settings={settings} />
       <HeroSection settings={settings} />
-      <StatsBar partners={partners} mobilities={mobilities} />
+      <StatsBar partners={partners} mobilities={mobilities} settings={settings} />
       <PartnersMap partners={partners} mobilities={mobilities} />
       <MobilitiesTimeline mobilities={mobilities} />
       <GallerySection media={media} />
