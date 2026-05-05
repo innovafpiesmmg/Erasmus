@@ -16,6 +16,19 @@ import ActivityDetail from "@/pages/activity-detail";
 import MobilityDetail from "@/pages/mobility-detail";
 import Gallery from "@/pages/gallery";
 import Partners from "@/pages/partners";
+import { setUnauthorizedHandler } from "@workspace/api-client-react";
+
+const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+setUnauthorizedHandler(() => {
+  const loginPath = `${BASE}/admin/login`;
+  const currentPath = window.location.pathname;
+  const isAdminPage =
+    currentPath.startsWith(`${BASE}/admin`) && !currentPath.startsWith(loginPath);
+  if (isAdminPage) {
+    window.location.href = `${loginPath}?reason=session_expired`;
+  }
+});
 
 const queryClient = new QueryClient({
   defaultOptions: {

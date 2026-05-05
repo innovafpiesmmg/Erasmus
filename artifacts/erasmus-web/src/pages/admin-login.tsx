@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Lock, User } from "lucide-react";
+import { Lock, User, Clock } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Introduce el nombre de usuario"),
@@ -17,6 +17,7 @@ export default function AdminLogin() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
+  const sessionExpired = new URLSearchParams(window.location.search).get("reason") === "session_expired";
 
   const login = useAdminLogin({
     mutation: {
@@ -50,6 +51,13 @@ export default function AdminLogin() {
           <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8">
             <h1 className="text-2xl font-bold text-white mb-1">Acceso al panel</h1>
             <p className="text-white/60 text-sm mb-8">Introduce tus credenciales para continuar</p>
+
+            {sessionExpired && (
+              <div className="flex items-start gap-3 bg-amber-500/20 border border-amber-500/40 rounded-lg px-4 py-3 mb-6" data-testid="session-expired-notice">
+                <Clock size={16} className="text-amber-300 mt-0.5 shrink-0" />
+                <p className="text-amber-200 text-sm">Tu sesión ha expirado por inactividad. Por favor, inicia sesión de nuevo.</p>
+              </div>
+            )}
 
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
               <div>
