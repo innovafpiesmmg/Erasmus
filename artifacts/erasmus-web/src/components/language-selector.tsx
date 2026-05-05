@@ -17,25 +17,37 @@ function getCookieLang(): string | null {
   return m ? m[1] : null;
 }
 
+function clearGTCookies() {
+  const exp = new Date(0).toUTCString();
+  const host = window.location.hostname;
+  // Delete all domain variants that Google Translate may have set
+  for (const domain of ["", host, `.${host}`]) {
+    const domainPart = domain ? `; domain=${domain}` : "";
+    document.cookie = `googtrans=; expires=${exp}; path=/${domainPart}`;
+    document.cookie = `googtrans=; expires=${exp}; path=/; SameSite=None; Secure${domainPart}`;
+  }
+}
+
 function applyTranslation(code: string) {
   if (code === "es") {
-    // Reset: delete googtrans cookies and reload
-    document.cookie = "googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = `googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=${window.location.hostname}`;
+    // Clear every known cookie variant so GT doesn't re-apply on reload
+    clearGTCookies();
     localStorage.removeItem(STORAGE_KEY);
     window.location.reload();
     return;
   }
-  // Set via the hidden Google Translate combo box
+
+  // Try via the hidden Google Translate combo box (already loaded)
   const select = document.querySelector<HTMLSelectElement>(".goog-te-combo");
   if (select) {
     select.value = code;
     select.dispatchEvent(new Event("change"));
     localStorage.setItem(STORAGE_KEY, code);
   } else {
-    // Widget not ready yet — set cookie manually and reload
-    document.cookie = `/es/${code}; path=/; domain=${window.location.hostname}`;
+    // Widget not ready yet — set cookie and reload
+    const host = window.location.hostname;
     document.cookie = `googtrans=/es/${code}; path=/`;
+    document.cookie = `googtrans=/es/${code}; path=/; domain=.${host}`;
     localStorage.setItem(STORAGE_KEY, code);
     window.location.reload();
   }
@@ -69,7 +81,8 @@ export default function LanguageSelector({ dark = false }: { dark?: boolean }) {
     ? "text-white/80 hover:text-white hover:bg-white/10"
     : "text-slate-600 hover:text-slate-900 hover:bg-slate-100";
 
-  const dropdownBase = "absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden";
+  const dropdownBase =
+    "absolute right-0 mt-2 w-44 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden";
 
   return (
     <div ref={ref} className="relative">
