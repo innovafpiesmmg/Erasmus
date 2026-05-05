@@ -153,3 +153,19 @@ Both layers use `/opengraph.jpg` as a fallback `og:image` when the mobility has 
 ## Pnpm Workspace
 
 See the pnpm-workspace skill for workspace structure, TypeScript setup, and package details.
+
+---
+
+## Ubuntu Deployment (`sudo sea`)
+
+The platform deploys to Ubuntu via `install.sh` (one-time) and `update.sh` (subsequent updates). Both register a global `/usr/local/bin/sea` shim with these subcommands:
+
+| Comando | Qué hace |
+|---------|----------|
+| `sudo sea` | Actualiza la plataforma desde GitHub (= `sudo sea update`) |
+| `sudo sea reset-admin` | Rehashea `ADMIN_PASSWORD` de `/etc/sea-erasmus/env` en la BD, marca el usuario como super_admin, y borra sesiones rancias. Recupera el acceso cuando el admin no puede entrar (p. ej. tras cambiar la contraseña en el archivo env, ya que `ensureSeedAdmin` solo siembra si la tabla está vacía). |
+| `sudo sea help` | Muestra la lista de comandos. |
+
+`reset-admin` se implementa como flag CLI (`node dist/index.mjs --reset-admin`) en `artifacts/api-server/src/index.ts` + `artifacts/api-server/src/lib/reset-admin.ts`, así que reutiliza el bundle de esbuild ya instalado y todas las dependencias (bcryptjs, drizzle, pg).
+
+`update.sh` siempre sobrescribe `/usr/local/bin/sea` para que cualquier nuevo subcomando llegue a deployments existentes en el siguiente `sudo sea`.

@@ -41,31 +41,67 @@ git checkout -- . 2>/dev/null || true
 git pull --quiet
 ok "Código actualizado."
 
-# Asegurar que el comando global 'sea' existe y está actualizado
-if [ ! -f /usr/local/bin/sea ]; then
-    info "Reinstalando comando global 'sea'..."
-    cat > /usr/local/bin/sea << 'SEAFEOF'
+# Asegurar que el comando global 'sea' está actualizado a la última versión
+# (sobreescribimos siempre para que comandos nuevos como 'reset-admin' lleguen
+# a servidores ya instalados sin necesidad de re-ejecutar install.sh)
+info "Sincronizando comando global 'sea'..."
+cat > /usr/local/bin/sea << 'SEAFEOF'
 #!/bin/bash
-# sea — Comando de actualización para Plataforma Erasmus+ SEA
-# Uso: sudo sea
+# sea — Comando para gestionar la Plataforma Erasmus+ SEA
+#
+# Uso:
+#   sudo sea                  Actualizar la plataforma desde GitHub
+#   sudo sea reset-admin      Resetear el admin desde /etc/sea-erasmus/env
+#                             (rehashea ADMIN_PASSWORD en la BD y borra
+#                              sesiones rancias — útil cuando no puedes
+#                              entrar al panel)
+#   sudo sea help             Mostrar esta ayuda
+
 APP_DIR="/var/www/sea-erasmus"
-[[ "$EUID" -ne 0 ]] && { echo "Usa: sudo sea"; exit 1; }
-cd "$APP_DIR"
-# Restaurar update.sh desde git si fue eliminado accidentalmente
-if [ ! -f "$APP_DIR/update.sh" ]; then
-    echo "[sea] Restaurando update.sh desde git..."
-    git fetch origin --quiet 2>/dev/null || true
-    git checkout -- update.sh 2>/dev/null || \
-    git checkout origin/main -- update.sh 2>/dev/null || {
-        echo "[sea] ERROR: No se pudo restaurar update.sh"
+ENV_FILE="/etc/sea-erasmus/env"
+[[ "$EUID" -ne 0 ]] && { echo "Usa: sudo sea [comando]"; exit 1; }
+
+case "${1:-update}" in
+    help|--help|-h)
+        sed -n '2,11p' "$0" | sed 's/^# \?//'
+        exit 0
+        ;;
+    reset-admin)
+        cd "$APP_DIR" || { echo "[sea] ERROR: $APP_DIR no existe."; exit 1; }
+        [ -f "$ENV_FILE" ] || { echo "[sea] ERROR: $ENV_FILE no existe."; exit 1; }
+        set -a
+        # shellcheck disable=SC1090
+        . "$ENV_FILE"
+        set +a
+        DIST="$APP_DIR/artifacts/api-server/dist/index.mjs"
+        if [ ! -f "$DIST" ]; then
+            echo "[sea] El servidor no está compilado. Ejecuta 'sudo sea' primero."
+            exit 1
+        fi
+        exec /usr/bin/node "$DIST" --reset-admin
+        ;;
+    update|"")
+        cd "$APP_DIR" || { echo "[sea] ERROR: $APP_DIR no existe."; exit 1; }
+        if [ ! -f "$APP_DIR/update.sh" ]; then
+            echo "[sea] Restaurando update.sh desde git..."
+            git fetch origin --quiet 2>/dev/null || true
+            git checkout -- update.sh 2>/dev/null || \
+            git checkout origin/main -- update.sh 2>/dev/null || {
+                echo "[sea] ERROR: No se pudo restaurar update.sh"
+                exit 1
+            }
+        fi
+        exec bash "$APP_DIR/update.sh"
+        ;;
+    *)
+        echo "[sea] Comando desconocido: $1"
+        echo "      Usa 'sudo sea help' para ver los comandos disponibles."
         exit 1
-    }
-fi
-exec bash "$APP_DIR/update.sh"
+        ;;
+esac
 SEAFEOF
-    chmod +x /usr/local/bin/sea
-    ok "Comando 'sea' reinstalado en /usr/local/bin/sea"
-fi
+chmod +x /usr/local/bin/sea
+ok "Comando 'sea' sincronizado en /usr/local/bin/sea"
 
 info "[2/6] Instalando dependencias de Node.js..."
 pnpm install --frozen-lockfile 2>/dev/null || pnpm install
