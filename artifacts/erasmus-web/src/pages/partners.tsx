@@ -5,6 +5,7 @@ import { MapPin, Globe, ExternalLink, Instagram, Twitter, Star, X, Building2, Li
 import { useState, useEffect } from "react";
 import { Link, useSearch } from "wouter";
 import PublicHeader from "@/components/public-header";
+import { DestinationMap } from "@/components/destination-map";
 
 const COUNTRY_FLAGS: Record<string, string> = {
   España: "🇪🇸",
@@ -176,6 +177,15 @@ function PartnerDetailModal({ partner, color, onClose }: { partner: Partner; col
                 </div>
               )}
             </div>
+
+            {partner.lat && partner.lng && (
+              <div>
+                <p className="text-xs font-medium text-slate-500 mb-2 flex items-center gap-1">
+                  <MapPin size={12} /> Ubicación
+                </p>
+                <DestinationMap partner={partner} color={color} />
+              </div>
+            )}
 
             <button
               onClick={onClose}
