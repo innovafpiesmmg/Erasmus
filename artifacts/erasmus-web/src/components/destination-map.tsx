@@ -58,7 +58,7 @@ export function DestinationMap({ partner, color }: { partner: Partner; color: st
   return (
     <div
       ref={mapRef}
-      className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 shadow-sm"
+      className="w-full h-64 rounded-2xl overflow-hidden border border-slate-100 shadow-sm isolate"
       data-testid="destination-map"
     />
   );
