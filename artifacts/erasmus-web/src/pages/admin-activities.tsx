@@ -14,7 +14,7 @@ import AdminLayout from "@/components/admin-layout";
 const activitySchema = z.object({
   title: z.string().min(1, "Título requerido"),
   description: z.string().optional().nullable(),
-  imageUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  imageUrl: z.string().url("URL inválida").or(z.string().startsWith("/uploads/")).optional().nullable().or(z.literal("")),
   mobilityId: z.coerce.number().optional().nullable(),
 });
 type ActivityForm = z.infer<typeof activitySchema>;

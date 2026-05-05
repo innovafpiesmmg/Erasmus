@@ -4,11 +4,11 @@ import {
 } from "@workspace/api-client-react";
 import type { MobilityWithPartner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useRef } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, Calendar, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, X, Upload, Link } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const WORK_PACKAGES = ["WP1", "WP2", "WP3", "WP4", "WP5", "WP6", "WP7"];
@@ -19,7 +19,7 @@ const mobilitySchema = z.object({
   theme: z.string().min(1, "Tema requerido"),
   startDate: z.string().min(1, "Fecha de inicio requerida"),
   endDate: z.string().min(1, "Fecha de fin requerida"),
-  headerImageUrl: z.string().url().optional().nullable().or(z.literal("")),
+  headerImageUrl: z.string().url().or(z.string().startsWith("/uploads/")).optional().nullable().or(z.literal("")),
   description: z.string().optional().nullable(),
 });
 type MobilityForm = z.infer<typeof mobilitySchema>;
@@ -38,6 +38,40 @@ function MobilityModal({ mobility, activityCount = 0, onClose }: { mobility?: Mo
     resolver: zodResolver(mobilitySchema),
     defaultValues: mobility ? { ...mobility } : {},
   });
+
+  const headerImageUrlValue = useWatch({ control: form.control, name: "headerImageUrl" });
+
+  const [imgTab, setImgTab] = useState<"upload" | "url">("upload");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (file: File) => {
+    setUploading(true);
+    setUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al subir");
+      }
+      const { url } = await res.json() as { url: string };
+      form.setValue("headerImageUrl", url, { shouldValidate: true });
+      setSelectedFile(file);
+    } catch (e) {
+      setUploadError((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const onSubmit = (data: MobilityForm) => {
     const payload = { ...data, headerImageUrl: data.headerImageUrl || null, description: data.description || null };
@@ -101,8 +135,90 @@ function MobilityModal({ mobility, activityCount = 0, onClose }: { mobility?: Mo
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Imagen de cabecera (URL)</label>
-            <input {...form.register("headerImageUrl")} type="url" data-testid="input-header-image" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+            <label className="block text-xs font-medium text-slate-700 mb-2">Imagen de cabecera</label>
+            <div className="flex border border-slate-200 rounded-lg overflow-hidden mb-3">
+              <button
+                type="button"
+                onClick={() => setImgTab("upload")}
+                className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${imgTab === "upload" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <Upload size={13} /> Subir archivo
+              </button>
+              <button
+                type="button"
+                onClick={() => setImgTab("url")}
+                className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${imgTab === "url" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}
+              >
+                <Link size={13} /> Por URL
+              </button>
+            </div>
+
+            {imgTab === "upload" ? (
+              <div>
+                <div
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-[#003399] bg-blue-50" : uploading ? "border-slate-200 bg-slate-50 cursor-wait" : "border-slate-200 hover:border-slate-300"}`}
+                >
+                  {uploading ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="w-8 h-8 border-2 border-[#003399] border-t-transparent rounded-full animate-spin" />
+                      <p className="text-sm text-slate-500">Subiendo...</p>
+                    </div>
+                  ) : headerImageUrlValue && selectedFile ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={headerImageUrlValue} alt="" className="h-20 rounded-lg object-cover mx-auto" />
+                      <p className="text-xs text-slate-500 truncate max-w-full">{selectedFile.name}</p>
+                      <p className="text-xs text-green-600 font-medium">✓ Subida correctamente</p>
+                    </div>
+                  ) : mobility?.headerImageUrl && !selectedFile ? (
+                    <div className="flex flex-col items-center gap-2">
+                      <img src={mobility.headerImageUrl} alt="" className="h-20 rounded-lg object-cover mx-auto" />
+                      <p className="text-xs text-slate-400">Haz clic para cambiar la imagen</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <Upload size={28} className="mx-auto mb-2 text-slate-300" />
+                      <p className="text-sm text-slate-500">Arrastra aquí o <span className="text-[#003399] font-medium">selecciona un archivo</span></p>
+                      <p className="text-xs text-slate-400 mt-1">JPEG, PNG, GIF, WebP · Máx. 20 MB</p>
+                    </div>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    className="hidden"
+                    data-testid="input-header-image"
+                    onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); }}
+                  />
+                </div>
+                {uploadError && <p className="text-red-500 text-xs mt-1">{uploadError}</p>}
+              </div>
+            ) : (
+              <div>
+                <input
+                  {...form.register("headerImageUrl")}
+                  type="url"
+                  placeholder="https://..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20"
+                />
+                {form.formState.errors.headerImageUrl && (
+                  <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.headerImageUrl.message}</p>
+                )}
+                {headerImageUrlValue && !form.formState.errors.headerImageUrl && (
+                  <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style={{ height: 120 }}>
+                    <img src={headerImageUrlValue} alt="Previsualización" className="w-full h-full object-cover" />
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {mobility && (
