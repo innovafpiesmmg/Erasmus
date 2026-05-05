@@ -1,7 +1,8 @@
 import { useParams, Link } from "wouter";
 import { useGetActivity, useGetMobility, getGetMobilityQueryKey } from "@workspace/api-client-react";
 import { motion } from "framer-motion";
-import { Calendar, MapPin, Leaf, ArrowRight, ImageOff } from "lucide-react";
+import { Calendar, MapPin, Leaf, ArrowRight, ImageOff, Share2, Check } from "lucide-react";
+import { useState, useEffect } from "react";
 import PublicHeader from "@/components/public-header";
 
 const WP_COLORS: Record<string, string> = {
@@ -21,6 +22,97 @@ const COUNTRY_FLAGS: Record<string, string> = {
   Portugal: "🇵🇹",
   Macedonia: "🇲🇰",
 };
+
+function useActivityMeta(activity: { title: string; description?: string | null; imageUrl?: string | null } | undefined) {
+  useEffect(() => {
+    if (!activity) return;
+
+    const title = `${activity.title} — Erasmus+ Platform`;
+    const description = activity.description
+      ? activity.description.slice(0, 160)
+      : "Actividad Erasmus+";
+    const image = activity.imageUrl ?? null;
+
+    document.title = title;
+
+    function setMeta(property: string, content: string, attr: "property" | "name" = "property") {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${property}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, property);
+        document.head.appendChild(el);
+      }
+      el.setAttribute("content", content);
+    }
+
+    function removeMeta(property: string, attr: "property" | "name" = "property") {
+      const el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${property}"]`);
+      el?.remove();
+    }
+
+    setMeta("og:type", "website");
+    setMeta("og:title", title);
+    setMeta("og:description", description);
+    setMeta("og:url", window.location.href);
+    if (image) {
+      setMeta("og:image", image);
+    } else {
+      removeMeta("og:image");
+    }
+
+    setMeta("twitter:card", "summary_large_image", "name");
+    setMeta("twitter:title", title, "name");
+    setMeta("twitter:description", description, "name");
+    if (image) {
+      setMeta("twitter:image", image, "name");
+    } else {
+      removeMeta("twitter:image", "name");
+    }
+
+    return () => {
+      document.title = "Erasmus+ Platform";
+    };
+  }, [activity]);
+}
+
+function ShareButton({ color }: { color: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ url, title: document.title });
+      } catch {
+        // user cancelled or share not available — fall through to clipboard
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        // clipboard access denied — silently ignore
+      }
+    }
+  };
+
+  return (
+    <button
+      onClick={handleShare}
+      data-testid="share-button"
+      className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border"
+      style={{
+        background: `${color}12`,
+        color,
+        borderColor: `${color}30`,
+      }}
+    >
+      {copied ? <Check size={15} /> : <Share2 size={15} />}
+      {copied ? "¡Enlace copiado!" : "Compartir"}
+    </button>
+  );
+}
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("es-ES", {
@@ -42,6 +134,8 @@ export default function ActivityDetail() {
       queryKey: getGetMobilityQueryKey(mobilityId),
     },
   });
+
+  useActivityMeta(activity);
 
   if (isLoading) {
     return (
@@ -120,7 +214,7 @@ export default function ActivityDetail() {
 
               {/* Meta */}
               {mobility && (
-                <div className="flex items-center gap-4 flex-wrap text-sm text-slate-500">
+                <div className="flex items-center gap-4 flex-wrap text-sm text-slate-500 mb-5">
                   <span className="flex items-center gap-1.5">
                     <MapPin size={13} />
                     {COUNTRY_FLAGS[mobility.partner?.country ?? ""] ?? "🌍"}{" "}
@@ -132,6 +226,8 @@ export default function ActivityDetail() {
                   </span>
                 </div>
               )}
+
+              <ShareButton color={color} />
             </motion.div>
           </div>
         </div>
