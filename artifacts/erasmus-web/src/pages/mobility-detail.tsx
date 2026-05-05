@@ -252,6 +252,7 @@ function DestinationMap({ partner, color }: { partner: Partner; color: string })
         <div style="font-family:system-ui;min-width:160px">
           <div style="font-weight:700;color:${color};font-size:14px;margin-bottom:2px">${partner.name}</div>
           <div style="color:#666;font-size:12px">${partner.city}, ${partner.country}</div>
+          <a href="https://www.google.com/maps?q=${partner.lat},${partner.lng}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:8px;font-size:12px;color:${color};font-weight:600;text-decoration:none;">📍 Cómo llegar</a>
         </div>
       `);
 
