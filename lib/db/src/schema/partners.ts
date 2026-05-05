@@ -12,6 +12,7 @@ export const partnersTable = pgTable("partners", {
   lng: doublePrecision("lng").notNull(),
   webUrl: text("web_url"),
   logoUrl: text("logo_url"),
+  photoUrl: text("photo_url"),
   socialInstagram: text("social_instagram"),
   socialTwitter: text("social_twitter"),
   isCoordinator: boolean("is_coordinator").notNull().default(false),

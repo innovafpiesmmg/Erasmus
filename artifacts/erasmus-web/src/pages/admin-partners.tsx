@@ -1,11 +1,11 @@
 import { useGetPartners, useCreatePartner, useUpdatePartner, useDeletePartner, getGetPartnersQueryKey } from "@workspace/api-client-react";
 import type { Partner } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Pencil, Trash2, MapPin, Globe, X, ImageOff, Instagram, Twitter } from "lucide-react";
+import { Plus, Pencil, Trash2, MapPin, Globe, X, ImageOff, Instagram, Twitter, Upload, Link as LinkIcon2 } from "lucide-react";
 import AdminLayout from "@/components/admin-layout";
 
 const COUNTRY_FLAGS: Record<string, string> = {
@@ -22,6 +22,7 @@ const partnerSchema = z.object({
   lng: z.coerce.number().min(-180).max(180),
   webUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
   logoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
+  photoUrl: z.string().url("URL inválida").optional().nullable().or(z.literal("")),
   socialInstagram: z.string().optional().nullable(),
   socialTwitter: z.string().optional().nullable(),
   isCoordinator: z.boolean().default(false),
@@ -58,11 +59,42 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
     defaultValues: partner ? { ...partner } : { isCoordinator: false },
   });
 
+  const [photoTab, setPhotoTab] = useState<"upload" | "url">("upload");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+  const [photoDragOver, setPhotoDragOver] = useState(false);
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const photoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const photoUrlValue = useWatch({ control: form.control, name: "photoUrl" });
+
+  const handlePhotoUpload = async (file: File) => {
+    setPhotoUploading(true);
+    setPhotoUploadError(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? "Error al subir");
+      }
+      const { url } = await res.json() as { url: string };
+      form.setValue("photoUrl", url, { shouldValidate: true });
+      setSelectedPhotoFile(file);
+    } catch (e) {
+      setPhotoUploadError((e as Error).message);
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
   const onSubmit = (data: PartnerForm) => {
     const payload = {
       ...data,
       webUrl: data.webUrl || null,
       logoUrl: data.logoUrl || null,
+      photoUrl: data.photoUrl || null,
       oid: data.oid || null,
       socialInstagram: data.socialInstagram || null,
       socialTwitter: data.socialTwitter || null,
@@ -130,6 +162,66 @@ function PartnerModal({ partner, onClose }: { partner?: Partner; onClose: () => 
               <input {...form.register("logoUrl")} type="url" data-testid="input-partner-logo" className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" placeholder="https://..." />
               {form.formState.errors.logoUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.logoUrl.message}</p>}
               <LogoPreview control={form.control} />
+            </div>
+
+            {/* ── Foto del país ── */}
+            <div className="col-span-2">
+              <label className="block text-xs font-medium text-slate-700 mb-2">Foto del país / centro</label>
+              <div className="flex border border-slate-200 rounded-lg overflow-hidden mb-3">
+                <button type="button" onClick={() => setPhotoTab("upload")} className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${photoTab === "upload" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                  <Upload size={13} /> Subir archivo
+                </button>
+                <button type="button" onClick={() => setPhotoTab("url")} className={`flex-1 py-2 text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${photoTab === "url" ? "bg-[#003399] text-white" : "text-slate-500 hover:bg-slate-50"}`}>
+                  <LinkIcon2 size={13} /> Por URL
+                </button>
+              </div>
+
+              {photoTab === "upload" ? (
+                <div>
+                  <div
+                    onClick={() => !photoUploading && photoFileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setPhotoDragOver(true); }}
+                    onDragLeave={() => setPhotoDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setPhotoDragOver(false); const f = e.dataTransfer.files[0]; if (f) handlePhotoUpload(f); }}
+                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-colors ${photoDragOver ? "border-[#003399] bg-blue-50" : photoUploading ? "border-slate-200 bg-slate-50 cursor-wait" : "border-slate-200 hover:border-slate-300"}`}
+                  >
+                    {photoUploading ? (
+                      <div className="flex flex-col items-center gap-2 py-2">
+                        <div className="w-7 h-7 border-2 border-[#003399] border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs text-slate-500">Subiendo...</p>
+                      </div>
+                    ) : photoUrlValue && selectedPhotoFile ? (
+                      <div className="flex flex-col items-center gap-1.5">
+                        <img src={photoUrlValue} alt="" className="h-16 w-full rounded-lg object-cover" />
+                        <p className="text-xs text-green-600 font-medium">✓ Subida correctamente</p>
+                      </div>
+                    ) : partner?.photoUrl && !selectedPhotoFile ? (
+                      <div className="flex flex-col items-center gap-1.5">
+                        <img src={partner.photoUrl} alt="" className="h-16 w-full rounded-lg object-cover" />
+                        <p className="text-xs text-slate-400">Haz clic para cambiar la foto</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <Upload size={24} className="mx-auto mb-1.5 text-slate-300" />
+                        <p className="text-sm text-slate-500">Arrastra o <span className="text-[#003399] font-medium">selecciona</span></p>
+                        <p className="text-xs text-slate-400 mt-0.5">JPEG, PNG, WebP · Máx. 20 MB</p>
+                      </div>
+                    )}
+                    <input ref={photoFileInputRef} type="file" accept="image/jpeg,image/png,image/gif,image/webp" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); }} />
+                  </div>
+                  {photoUploadError && <p className="text-red-500 text-xs mt-1">{photoUploadError}</p>}
+                </div>
+              ) : (
+                <div>
+                  <input {...form.register("photoUrl")} type="url" placeholder="https://..." className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#003399]/20" />
+                  {form.formState.errors.photoUrl && <p className="text-red-500 text-xs mt-0.5">{form.formState.errors.photoUrl.message}</p>}
+                  {photoUrlValue && !form.formState.errors.photoUrl && (
+                    <div className="mt-2 rounded-lg overflow-hidden border border-slate-200 bg-slate-50" style={{ height: 100 }}>
+                      <img src={photoUrlValue} alt="" className="w-full h-full object-cover" />
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div>

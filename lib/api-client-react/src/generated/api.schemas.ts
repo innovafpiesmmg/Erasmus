@@ -97,6 +97,8 @@ export interface Partner {
   /** @nullable */
   logoUrl?: string | null;
   /** @nullable */
+  photoUrl?: string | null;
+  /** @nullable */
   socialInstagram?: string | null;
   /** @nullable */
   socialTwitter?: string | null;
@@ -134,6 +136,8 @@ export interface CreatePartnerBody {
   webUrl?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
   /** @nullable */
   socialInstagram?: string | null;
   /** @nullable */

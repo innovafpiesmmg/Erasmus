@@ -39,7 +39,7 @@ function getPartnerColor(index: number) {
 
 function PartnerDetailModal({ partner, color, onClose }: { partner: Partner; color: string; onClose: () => void }) {
   const flag = COUNTRY_FLAGS[partner.country] ?? "🌍";
-  const countryPhoto = COUNTRY_PHOTOS[partner.country];
+  const countryPhoto = partner.photoUrl ?? COUNTRY_PHOTOS[partner.country];
 
   return (
     <AnimatePresence>
@@ -202,7 +202,7 @@ function PartnerCard({
   onClick: () => void;
 }) {
   const flag = COUNTRY_FLAGS[partner.country] ?? "🌍";
-  const countryPhoto = COUNTRY_PHOTOS[partner.country];
+  const countryPhoto = partner.photoUrl ?? COUNTRY_PHOTOS[partner.country];
   const [photoFailed, setPhotoFailed] = useState(false);
 
   return (
