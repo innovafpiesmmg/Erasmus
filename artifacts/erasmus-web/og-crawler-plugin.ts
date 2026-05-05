@@ -69,10 +69,53 @@ interface ActivityData {
   imageUrl?: string | null;
 }
 
+interface PartnerData {
+  name?: string;
+  city?: string;
+  country?: string;
+  logoUrl?: string | null;
+  photoUrl?: string | null;
+  isCoordinator?: boolean;
+}
+
 function toAbsoluteUrl(url: string | null | undefined, siteUrl: string): string {
   if (!url) return `${siteUrl}/opengraph.jpg`;
   if (/^https?:\/\//i.test(url)) return url;
   return `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+}
+
+function buildPartnerOgHtml(partner: PartnerData, id: string, siteUrl: string): string {
+  const title = `${partner.name ?? "Socio Erasmus+"} — Erasmus+ Platform`;
+  const role = partner.isCoordinator ? "Centro coordinador" : "Centro socio";
+  const location =
+    partner.city && partner.country
+      ? `${partner.city}, ${partner.country}`
+      : (partner.country ?? "Europa");
+  const description = `${role} Erasmus+ en ${location}.`;
+  const image = toAbsoluteUrl(partner.logoUrl ?? partner.photoUrl, siteUrl);
+  const url = `${siteUrl}/socios?partner=${id}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(title)}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Erasmus+ Platform" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(url)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(url)}" />
+  </head>
+  <body>
+    <p>Redirigiendo a <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
+  </body>
+</html>`;
 }
 
 function buildActivityOgHtml(activity: ActivityData, id: string, siteUrl: string): string {
@@ -146,7 +189,8 @@ type ConnectMiddleware = (
 function createCrawlerMiddleware(apiPort: string): ConnectMiddleware {
   return async (req, res, next) => {
     const ua = (req.headers["user-agent"] as string) ?? "";
-    const urlPath = (req.url ?? "").split("?")[0];
+    const rawUrl = req.url ?? "";
+    const [urlPath, queryString = ""] = rawUrl.split("?");
 
     if (!isCrawler(ua)) {
       return next();
@@ -154,8 +198,20 @@ function createCrawlerMiddleware(apiPort: string): ConnectMiddleware {
 
     const mobilityMatch = urlPath.match(/^\/movilidades\/(\d+)$/);
     const activityMatch = urlPath.match(/^\/actividades\/(\d+)$/);
+    const partnerPathMatch = urlPath.match(/^\/socios\/(\d+)$/);
+    const partnerQueryParam =
+      urlPath === "/socios"
+        ? new URLSearchParams(queryString).get("partner")
+        : null;
+    const partnerQueryId =
+      partnerQueryParam && /^\d+$/.test(partnerQueryParam)
+        ? partnerQueryParam
+        : null;
+    const partnerId = partnerPathMatch
+      ? partnerPathMatch[1]
+      : partnerQueryId;
 
-    if (!mobilityMatch && !activityMatch) {
+    if (!mobilityMatch && !activityMatch && !partnerId) {
       return next();
     }
 
@@ -172,12 +228,18 @@ function createCrawlerMiddleware(apiPort: string): ConnectMiddleware {
           `http://localhost:${apiPort}/api/mobilities/${id}`
         );
         html = buildOgHtml(mobility as MobilityData, id, siteUrl);
-      } else {
-        const id = activityMatch![1];
+      } else if (activityMatch) {
+        const id = activityMatch[1];
         const activity = await fetchJson(
           `http://localhost:${apiPort}/api/activities/${id}`
         );
         html = buildActivityOgHtml(activity as ActivityData, id, siteUrl);
+      } else {
+        const id = partnerId!;
+        const partner = await fetchJson(
+          `http://localhost:${apiPort}/api/partners/${id}`
+        );
+        html = buildPartnerOgHtml(partner as PartnerData, id, siteUrl);
       }
 
       res.statusCode = 200;

@@ -80,6 +80,47 @@ function buildMobilityOgHtml(
 </html>`;
 }
 
+function buildPartnerOgHtml(
+  partner: {
+    name: string;
+    city: string;
+    country: string;
+    logoUrl: string | null;
+    photoUrl: string | null;
+    isCoordinator: boolean;
+  },
+  id: number,
+  siteUrl: string
+): string {
+  const title = `${partner.name} — Erasmus+ Platform`;
+  const role = partner.isCoordinator ? "Centro coordinador" : "Centro socio";
+  const description = `${role} Erasmus+ en ${partner.city}, ${partner.country}.`;
+  const image = toAbsoluteUrl(partner.logoUrl ?? partner.photoUrl, siteUrl);
+  const url = `${siteUrl}/socios?partner=${id}`;
+
+  return `<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>${escapeHtml(title)}</title>
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Erasmus+ Platform" />
+    <meta property="og:title" content="${escapeHtml(title)}" />
+    <meta property="og:description" content="${escapeHtml(description)}" />
+    <meta property="og:url" content="${escapeHtml(url)}" />
+    <meta property="og:image" content="${escapeHtml(image)}" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${escapeHtml(title)}" />
+    <meta name="twitter:description" content="${escapeHtml(description)}" />
+    <meta name="twitter:image" content="${escapeHtml(image)}" />
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(url)}" />
+  </head>
+  <body>
+    <p>Redirigiendo a <a href="${escapeHtml(url)}">${escapeHtml(title)}</a>...</p>
+  </body>
+</html>`;
+}
+
 function buildActivityOgHtml(
   activity: { title: string; description: string | null; imageUrl: string | null },
   id: number,
@@ -147,8 +188,20 @@ export async function ogCrawlerMiddleware(
 
   const mobilityMatch = urlPath.match(/^\/movilidades\/(\d+)$/);
   const activityMatch = urlPath.match(/^\/actividades\/(\d+)$/);
+  const partnerPathMatch = urlPath.match(/^\/socios\/(\d+)$/);
+  const partnerQueryRaw =
+    urlPath === "/socios" && typeof req.query.partner === "string"
+      ? req.query.partner
+      : null;
+  const partnerQueryId =
+    partnerQueryRaw && /^\d+$/.test(partnerQueryRaw) ? partnerQueryRaw : null;
+  const partnerId = partnerPathMatch
+    ? Number(partnerPathMatch[1])
+    : partnerQueryId
+      ? Number(partnerQueryId)
+      : null;
 
-  if (!mobilityMatch && !activityMatch) {
+  if (!mobilityMatch && !activityMatch && partnerId == null) {
     return next();
   }
 
@@ -193,8 +246,8 @@ export async function ogCrawlerMiddleware(
 
       ogHtmlCache.set(cacheKey, html);
       sendCachedHtml(res, html);
-    } else {
-      const id = Number(activityMatch![1]);
+    } else if (activityMatch) {
+      const id = Number(activityMatch[1]);
       const cacheKey = `activity:${id}:${siteUrl}`;
 
       const cached = ogHtmlCache.get(cacheKey);
@@ -217,6 +270,40 @@ export async function ogCrawlerMiddleware(
           title: activity[0].title,
           description: activity[0].description ?? null,
           imageUrl: activity[0].imageUrl ?? null,
+        },
+        id,
+        siteUrl
+      );
+
+      ogHtmlCache.set(cacheKey, html);
+      sendCachedHtml(res, html);
+    } else {
+      const id = partnerId!;
+      const cacheKey = `partner:${id}:${siteUrl}`;
+
+      const cached = ogHtmlCache.get(cacheKey);
+      if (cached) {
+        return sendCachedHtml(res, cached);
+      }
+
+      const partner = await db
+        .select()
+        .from(partnersTable)
+        .where(eq(partnersTable.id, id))
+        .limit(1);
+
+      if (!partner.length) {
+        return next();
+      }
+
+      const html = buildPartnerOgHtml(
+        {
+          name: partner[0].name,
+          city: partner[0].city,
+          country: partner[0].country,
+          logoUrl: partner[0].logoUrl ?? null,
+          photoUrl: partner[0].photoUrl ?? null,
+          isCoordinator: partner[0].isCoordinator,
         },
         id,
         siteUrl
