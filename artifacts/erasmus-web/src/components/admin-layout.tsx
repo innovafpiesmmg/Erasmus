@@ -1,7 +1,7 @@
 import { useGetAdminMe, useAdminLogout, getGetAdminMeQueryKey } from "@workspace/api-client-react";
 import { Link, useLocation, Redirect } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Calendar, BookOpen, Image, Settings, LogOut, Menu, X, HardDriveDownload } from "lucide-react";
 import { useState } from "react";
 
 const NAV_ITEMS = [
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/admin/actividades", label: "Actividades", icon: BookOpen },
   { href: "/admin/media", label: "Media", icon: Image },
   { href: "/admin/ajustes", label: "Ajustes", icon: Settings },
+  { href: "/admin/backup", label: "Backup", icon: HardDriveDownload },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

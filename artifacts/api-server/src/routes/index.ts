@@ -7,6 +7,7 @@ import mobilitiesRouter from "./mobilities";
 import activitiesRouter from "./activities";
 import mediaRouter from "./media";
 import dashboardRouter from "./dashboard";
+import backupRouter from "./backup";
 import { requireAdmin } from "../middleware/require-admin.js";
 
 const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -36,5 +37,6 @@ router.use(mobilitiesRouter);
 router.use(activitiesRouter);
 router.use(mediaRouter);
 router.use(dashboardRouter);
+router.use(backupRouter);
 
 export default router;
